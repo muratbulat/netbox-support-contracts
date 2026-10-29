@@ -345,6 +345,12 @@ class SupportCoverage(StateMixin, NetBoxModel):
     def effective_maintenance_company(self):
         return self.contract.maintenance_company
 
+    def get_contract_type_color(self):
+        return self.contract.get_contract_type_color()
+
+    def get_contract_type_display(self):
+        return self.contract.get_contract_type_display()
+
     def _state_end_date(self):
         return self.effective_end_date
 

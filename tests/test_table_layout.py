@@ -94,3 +94,21 @@ class NoWrapTests(TestCase):
                 with self.subTest(table=table_class.__name__, column=name):
                     self.assertIn("text-nowrap", table.columns[name].attrs["td"]["class"])
                     self.assertTrue(str(row.get_cell(name)))
+
+    def test_coverage_contract_type_badge_matches_contract_table_color(self):
+        for idx, (choice_val, _, color) in enumerate(ContractTypeChoices.CHOICES, start=10):
+            contract = make_contract(
+                f"CONT-COLOR-{idx}",
+                start_date=days(-30),
+                end_date=days(30),
+                contract_type=choice_val,
+                maintenance_company=make_maintenance_company(f"TPM-{idx}"),
+            )
+            cov = cover(contract, make_device(f"Color-Dev-{idx}"))
+            contract_table = SupportContractTable(annotate_contracts(SupportContract.objects.filter(pk=contract.pk)))
+            coverage_table = SupportCoverageTable(annotate_coverage(SupportCoverage.objects.filter(pk=cov.pk)))
+            contract_cell = str(contract_table.rows[0].get_cell("contract_type"))
+            coverage_cell = str(coverage_table.rows[0].get_cell("contract_type"))
+            self.assertEqual(coverage_cell, contract_cell)
+            self.assertIn(f"text-bg-{color}", coverage_cell)
+
