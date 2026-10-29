@@ -10,7 +10,7 @@ readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-authors = [{ name = "muratbulat" }]
+authors = [{ name = "Murat Bulat" }]
 keywords = ["netbox", "netbox-plugin", "support", "warranty", "contracts", "lifecycle", "eol"]
 # No runtime dependencies: Django, DRF, strawberry and friends are provided by the host NetBox.
 dependencies = []

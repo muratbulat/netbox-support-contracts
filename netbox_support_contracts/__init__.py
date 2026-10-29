@@ -11,7 +11,7 @@ class NetBoxSupportContractsConfig(PluginConfig):
     verbose_name = _("NetBox Support Contracts")
     description = _("Enterprise support contract, warranty coverage, and hardware EoL tracking for NetBox")
     version = __version__
-    author = "muratbulat"
+    author = "Murat Bulat"
     base_url = "support-contracts"
     min_version = "4.7.0"
     max_version = None

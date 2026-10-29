@@ -1,6 +1,7 @@
 from dcim.models import Device
 from django.test import RequestFactory, override_settings
 from django.urls import NoReverseMatch, reverse
+from extras.models import Dashboard
 from netbox.context_managers import event_tracking
 from utilities.testing import TestCase
 
@@ -299,11 +300,18 @@ class CoverageWorkflowTests(ViewTestBase):
         response = self.client.get(add_url, HTTP_HX_REQUEST="true")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Support Coverage Summary")
+        Dashboard.objects.create(user=self.user)  # NetBox creates it on the user's first home page visit
         post_response = self.client.post(add_url, {
             "widget_class": f"{PLUGIN}.SupportCoverageSummaryWidget",
             "config-limit": 8,
         })
         self.assertEqual(post_response.status_code, 200)
+        self.assertEqual(post_response.headers["HX-Redirect"], reverse("home"))
+        self.user.dashboard.refresh_from_db()
+        widgets = list(self.user.dashboard.config.values())
+        self.assertEqual(widgets[-1]["class"], f"{PLUGIN}.SupportCoverageSummaryWidget")
+        self.assertEqual(widgets[-1]["config"]["limit"], 8)
+        self.assertEqual(widgets[-1]["title"], "Support Coverage Summary")
 
 
 class GlobalSearchTests(ViewTestBase):

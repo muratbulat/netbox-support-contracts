@@ -38,7 +38,8 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
   use **Edit Selected** to move them to the new provider's contract in one step. If any moved row would duplicate existing coverage, the
   whole batch is rolled back.
 - **Bulk coverage workflow**: on a contract, choose **Add Devices / Serials** and:
-  - **Option A**: pick devices, VMs, or modules, or cover every device matching a site / device type / role filter.
+  - **Option A**: pick devices, VMs, or modules, or cover every device matching a site / device type / role / tag
+    filter.
   - **Option B**: paste up to 5,000 serial numbers, separated by newlines, commas, semicolons, or spaces. Matching
     runs in one query and ignores case. Devices already covered are skipped. A serial number shared by more than one
     device is reported as *ambiguous* and never guessed. Any serial numbers that are unmatched or ambiguous are put
@@ -57,14 +58,19 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
   shown on the type's page. Device panels flag conflicts:
   - *End-of-life hardware under active support contract*
   - *Support contract runs past hardware End of Support (EoS)*
+- **Coverage vs. Device Coverage**: *Coverage* has one row per contract assignment (a device, VM, module, or
+  contract-level license SKU) and keeps both expired and active contracts, so it is the full history. *Device
+  Coverage* is a report with one summary row per NetBox device, including uncovered devices and the hardware End of
+  Support date, for audits and RFQ exports.
 - **Device Coverage report** (*Support Contracts → Device Coverage*): every device with its coverage status,
-  filterable by status (including *Not covered*), site, role, manufacturer, and device type.
+  filterable by status (including *Not covered*), site, role, manufacturer, device type, and tag.
 - **Support provider / RFQ export**: on the Device Coverage report, narrow the list down, for example to active
-  devices whose OEM warranty ends within 90 days, or devices whose coverage ends between two dates. Then choose
+  devices whose OEM warranty ends within 90 days, devices whose coverage ends between two dates, or hardware you
+  tagged in NetBox as renewal candidates. Then choose
   **Export for Support Provider (CSV)**. You get one row per device with manufacturer, model, part number, units per
   model, serial number, asset tag, site, rack, role, device status, the coverage currently in force (contract, type,
-  end date, days remaining), the integrator and maintenance companies, and the hardware End of Support date. A contract's *Covered Devices &
-  Objects* tab has the same button. Headers follow the user's language, and the CSV delimiter follows the user's
+  end date, days remaining), the integrator and maintenance companies, and the hardware End of Support date. A
+  contract's *Covered Devices & Objects* tab has the same button. Headers follow the user's language, and the CSV delimiter follows the user's
   NetBox CSV preference.
 - **Dashboard widget**: *Support Coverage Summary* shows Covered, Expiring, Expired, and Not Covered device counts,
   each linking to the report, plus the soonest-ending contracts.
@@ -76,26 +82,56 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
 
 ## Installation
 
-1. Install the package into NetBox's virtual environment:
+Install the package into NetBox's virtual environment using one of the methods below, and add the matching line to
+`/opt/netbox/local_requirements.txt` so NetBox's upgrade script reinstalls it.
 
-   ```shell
-   source /opt/netbox/venv/bin/activate
-   pip install netbox-support-contracts
-   ```
+**Method 1: from PyPI**
 
-   To install automatically on NetBox upgrades, add `netbox-support-contracts` to `local_requirements.txt`.
+```shell
+source /opt/netbox/venv/bin/activate
+pip install netbox-support-contracts
+echo "netbox-support-contracts" >> /opt/netbox/local_requirements.txt
+```
 
-2. Enable the plugin in `configuration.py`:
+**Method 2: directly from the GitHub repository** (HTTPS or SSH; works for private repositories too)
+
+```shell
+source /opt/netbox/venv/bin/activate
+# Via HTTPS:
+pip install "git+https://github.com/muratbulat/netbox-support-contracts.git@main"
+# Or via SSH (recommended for a private repository):
+pip install "git+ssh://git@github.com/muratbulat/netbox-support-contracts.git@main"
+```
+
+Matching `local_requirements.txt` line:
+
+```text
+git+ssh://git@github.com/muratbulat/netbox-support-contracts.git@main
+```
+
+**Method 3: from a local clone** (offline, development, or a custom path)
+
+```shell
+git clone https://github.com/muratbulat/netbox-support-contracts.git /opt/netbox/plugins/netbox-support-contracts
+source /opt/netbox/venv/bin/activate
+pip install /opt/netbox/plugins/netbox-support-contracts
+echo "-e /opt/netbox/plugins/netbox-support-contracts" >> /opt/netbox/local_requirements.txt
+```
+
+Then, for any method:
+
+1. Enable the plugin in `/opt/netbox/netbox/netbox/configuration.py`:
 
    ```python
    PLUGINS = ["netbox_support_contracts"]
    ```
 
-3. Apply the database migrations and restart NetBox:
+2. Apply the database migrations, build the search index for existing objects, and restart NetBox:
 
    ```shell
    cd /opt/netbox/netbox
    python manage.py migrate
+   python manage.py reindex --lazy
    sudo systemctl restart netbox netbox-rq
    ```
 
