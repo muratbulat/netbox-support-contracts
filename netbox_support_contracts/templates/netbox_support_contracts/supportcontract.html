@@ -31,6 +31,10 @@
             <td><span class="font-monospace">{{ object.contract_number }}</span></td>
           </tr>
           <tr>
+            <th scope="row">{% trans "Contract Type" %}</th>
+            <td><span class="badge text-bg-{{ object.get_contract_type_color }}">{{ object.get_contract_type_display }}</span></td>
+          </tr>
+          <tr>
             <th scope="row">{% trans "Service Level" %}</th>
             <td>{{ object.service_level|placeholder }}</td>
           </tr>
@@ -78,6 +82,10 @@
           <tr>
             <th scope="row">{% trans "Modules" %}</th>
             <td><a href="{{ coverage_url }}?object_type=module">{{ object.module_count }}</a></td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Licenses / SKUs" %}</th>
+            <td><a href="{{ coverage_url }}?object_type=none">{{ object.sku_count }}</a></td>
           </tr>
         </table>
       </div>

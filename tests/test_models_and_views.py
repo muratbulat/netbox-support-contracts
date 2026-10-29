@@ -96,6 +96,7 @@ class ModelViewTests(ViewTestBase):
         response = self.client.post(url("supportcontract_add"), {
             "manufacturer": make_manufacturer().pk,
             "contract_number": "CONT-2026-002",
+            "contract_type": "vendor_support",
             "end_date": days(10).isoformat(),
         })
         self.assertEqual(response.status_code, 302)
@@ -173,6 +174,7 @@ class CostVisibilityTests(ViewTestBase):
         response = self.client.post(self.contract.get_absolute_url() + "edit/", {
             "manufacturer": self.contract.manufacturer.pk,
             "contract_number": self.contract.contract_number,
+            "contract_type": self.contract.contract_type,
             "end_date": days(60).isoformat(),
             "cost": "1.00",
         })

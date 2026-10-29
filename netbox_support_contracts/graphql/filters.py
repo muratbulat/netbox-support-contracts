@@ -16,6 +16,7 @@ if TYPE_CHECKING:
         ModuleFilter,
         ModuleTypeFilter,
     )
+    from netbox.graphql.filter_lookups import IntegerLookup
     from tenancy.graphql.filters import TenantFilter
     from virtualization.graphql.filters import VirtualMachineFilter
 
@@ -30,6 +31,7 @@ class SupportContractFilter(PrimaryModelFilter):
     )
     manufacturer_id: ID | None = strawberry_django.filter_field()
     contract_number: StrFilterLookup | None = strawberry_django.filter_field()
+    contract_type: StrFilterLookup | None = strawberry_django.filter_field()
     service_level: StrFilterLookup | None = strawberry_django.filter_field()
     start_date: DateFilterLookup | None = strawberry_django.filter_field()
     end_date: DateFilterLookup | None = strawberry_django.filter_field()
@@ -60,6 +62,9 @@ class SupportCoverageFilter(NetBoxModelFilter):
     module_id: ID | None = strawberry_django.filter_field()
     end_date: DateFilterLookup | None = strawberry_django.filter_field()
     sku: StrFilterLookup | None = strawberry_django.filter_field()
+    quantity: Annotated["IntegerLookup", strawberry.lazy("netbox.graphql.filter_lookups")] | None = (
+        strawberry_django.filter_field()
+    )
     notes: StrFilterLookup | None = strawberry_django.filter_field()
 
 

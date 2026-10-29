@@ -6,7 +6,7 @@ from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 from netbox.models import NetBoxModel, PrimaryModel
 
-from .choices import ContractStateChoices
+from .choices import ContractStateChoices, ContractTypeChoices
 from .services import contract_state, days_label, days_until
 
 __all__ = ("HardwareLifecycleEoL", "SupportContract", "SupportCoverage")
@@ -50,6 +50,12 @@ class SupportContract(StateMixin, PrimaryModel):
         verbose_name=_("manufacturer"),
     )
     contract_number = models.CharField(verbose_name=_("contract number"), max_length=128)
+    contract_type = models.CharField(
+        verbose_name=_("contract type"),
+        max_length=32,
+        choices=ContractTypeChoices,
+        default=ContractTypeChoices.VENDOR_SUPPORT,
+    )
     service_level = models.CharField(
         verbose_name=_("service level"),
         max_length=64,
@@ -93,7 +99,8 @@ class SupportContract(StateMixin, PrimaryModel):
     notified_state = models.CharField(max_length=16, blank=True, default="", editable=False)
 
     clone_fields = (
-        "manufacturer", "service_level", "start_date", "end_date", "reseller", "currency", "portal_url", "tenant",
+        "manufacturer", "contract_type", "service_level", "start_date", "end_date", "reseller", "currency",
+        "portal_url", "tenant",
     )
 
     class Meta:
@@ -116,6 +123,9 @@ class SupportContract(StateMixin, PrimaryModel):
 
     def _state_end_date(self):
         return self.end_date
+
+    def get_contract_type_color(self):
+        return ContractTypeChoices.colors.get(self.contract_type)
 
     def clean(self):
         super().clean()
@@ -177,6 +187,12 @@ class SupportCoverage(StateMixin, NetBoxModel):
         help_text=_("Optional override end date for this specific item (defaults to contract end date)."),
     )
     sku = models.CharField(max_length=100, blank=True, default="", verbose_name=_("SKU / License Part Number"))
+    quantity = models.PositiveIntegerField(
+        verbose_name=_("quantity"),
+        null=True,
+        blank=True,
+        help_text=_("License count, seats, sockets, or covered units (optional)."),
+    )
     notes = models.CharField(verbose_name=_("notes"), max_length=255, blank=True, default="")
 
     OBJECT_FIELDS = ("device", "virtual_machine", "module")

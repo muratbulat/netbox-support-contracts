@@ -23,6 +23,14 @@
             <td>{{ object.contract.manufacturer|linkify }}</td>
           </tr>
           <tr>
+            <th scope="row">{% trans "Contract Type" %}</th>
+            <td><span class="badge text-bg-{{ object.contract.get_contract_type_color }}">{{ object.contract.get_contract_type_display }}</span></td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Reseller" %}</th>
+            <td>{{ object.contract.reseller|placeholder }}</td>
+          </tr>
+          <tr>
             <th scope="row">{% trans "Service Level" %}</th>
             <td>{{ object.contract.service_level|placeholder }}</td>
           </tr>
@@ -47,6 +55,10 @@
           <tr>
             <th scope="row">{% trans "SKU / License Part Number" %}</th>
             <td>{{ object.sku|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Quantity" %}</th>
+            <td>{{ object.quantity|placeholder }}</td>
           </tr>
           <tr>
             <th scope="row">{% trans "Notes" %}</th>

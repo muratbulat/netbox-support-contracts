@@ -1,7 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from utilities.choices import ChoiceSet
 
-__all__ = ("ContractStateChoices", "CoverageStatusChoices", "CurrencyChoices")
+__all__ = ("ContractStateChoices", "ContractTypeChoices", "CoverageStatusChoices", "CurrencyChoices")
 
 
 class ContractStateChoices(ChoiceSet):
@@ -15,6 +15,22 @@ class ContractStateChoices(ChoiceSet):
         (ACTIVE, _("Active"), "green"),
         (EXPIRING, _("Expiring"), "yellow"),
         (EXPIRED, _("Expired"), "red"),
+    )
+
+
+class ContractTypeChoices(ChoiceSet):
+    """What kind of agreement a contract is: OEM warranty, vendor support, third-party maintenance, or software."""
+
+    WARRANTY = "warranty"
+    VENDOR_SUPPORT = "vendor_support"
+    TPM = "tpm"
+    SOFTWARE = "software"
+
+    CHOICES = (
+        (WARRANTY, _("OEM Warranty"), "blue"),
+        (VENDOR_SUPPORT, _("Vendor Support / Care Pack"), "cyan"),
+        (TPM, _("Third-Party Maintenance (TPM)"), "purple"),
+        (SOFTWARE, _("Software License / Subscription"), "indigo"),
     )
 
 

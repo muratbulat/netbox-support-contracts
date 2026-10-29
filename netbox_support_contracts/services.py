@@ -195,23 +195,25 @@ def _coverage_field(model):
         raise ValueError(f"{model._meta.label} cannot be covered by a support contract") from None
 
 
-def _coverage_count(field):
+def _coverage_count(**lookups):
     from .models import SupportCoverage
 
-    rows = SupportCoverage.objects.filter(contract=OuterRef("pk"), **{f"{field}__isnull": False})
+    rows = SupportCoverage.objects.filter(contract=OuterRef("pk"), **lookups)
     count = rows.order_by().values("contract").annotate(c=Count("pk")).values("c")
     return Coalesce(Subquery(count, output_field=IntegerField()), 0)
 
 
 def annotate_contracts(qs):
     """
-    Annotate a SupportContract queryset with device_count, vm_count, module_count, and effective_sort_end
-    (open-ended last) using correlated subqueries, so a whole page costs a single query.
+    Annotate a SupportContract queryset with device_count, vm_count, module_count, sku_count (contract-level
+    license/SKU rows not tied to an object), and effective_sort_end (open-ended last) using correlated
+    subqueries, so a whole page costs a single query.
     """
     return qs.annotate(
-        device_count=_coverage_count("device"),
-        vm_count=_coverage_count("virtual_machine"),
-        module_count=_coverage_count("module"),
+        device_count=_coverage_count(device__isnull=False),
+        vm_count=_coverage_count(virtual_machine__isnull=False),
+        module_count=_coverage_count(module__isnull=False),
+        sku_count=_coverage_count(device__isnull=True, virtual_machine__isnull=True, module__isnull=True),
         effective_sort_end=Coalesce("end_date", Value(OPEN_ENDED)),
     )
 
@@ -418,7 +420,17 @@ def _unique(objects):
 
 
 def bulk_add_coverage(
-    contract, *, user, devices=(), virtual_machines=(), modules=(), serials=(), sku="", end_date=None, notes=""
+    contract,
+    *,
+    user,
+    devices=(),
+    virtual_machines=(),
+    modules=(),
+    serials=(),
+    sku="",
+    quantity=None,
+    end_date=None,
+    notes="",
 ):
     """
     Cover objects with a contract in one transaction, skipping objects it already covers.
@@ -461,7 +473,9 @@ def bulk_add_coverage(
                 if obj.pk in covered:
                     result.existing.append(obj)
                     continue
-                coverage = SupportCoverage(contract=contract, sku=sku, end_date=end_date, notes=notes)
+                coverage = SupportCoverage(
+                    contract=contract, sku=sku, quantity=quantity, end_date=end_date, notes=notes
+                )
                 setattr(coverage, field_name, obj)
                 coverage.full_clean()
                 coverage.save()

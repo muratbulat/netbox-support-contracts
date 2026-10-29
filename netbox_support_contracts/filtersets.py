@@ -9,7 +9,7 @@ from tenancy.models import Tenant
 from utilities.filtersets import register_filterset
 from virtualization.models import VirtualMachine
 
-from .choices import ContractStateChoices, CoverageStatusChoices
+from .choices import ContractStateChoices, ContractTypeChoices, CoverageStatusChoices
 from .models import HardwareLifecycleEoL, SupportContract, SupportCoverage
 from .services import annotate_coverage, annotate_devices, contract_state_q, coverage_status_q, expiry_horizon
 
@@ -46,6 +46,7 @@ class SupportContractFilterSet(PrimaryModelFilterSet):
     tenant = django_filters.ModelMultipleChoiceFilter(
         field_name="tenant__slug", queryset=Tenant.objects.all(), to_field_name="slug", label=_("Tenant (slug)")
     )
+    contract_type = django_filters.MultipleChoiceFilter(choices=ContractTypeChoices, label=_("Contract type"))
     state = django_filters.MultipleChoiceFilter(
         choices=ContractStateChoices, method="filter_state", label=pgettext_lazy("support contracts", "State")
     )
@@ -119,6 +120,10 @@ class SupportCoverageFilterSet(NetBoxModelFilterSet):
     site_id = django_filters.ModelMultipleChoiceFilter(
         field_name="device__site", queryset=Site.objects.all(), label=_("Site (ID)")
     )
+    contract_type = django_filters.MultipleChoiceFilter(
+        field_name="contract__contract_type", choices=ContractTypeChoices, label=_("Contract type")
+    )
+    reseller = django_filters.CharFilter(field_name="contract__reseller", lookup_expr="icontains", label=_("Reseller"))
     state = django_filters.MultipleChoiceFilter(
         choices=ContractStateChoices, method="filter_state", label=pgettext_lazy("support contracts", "State")
     )
@@ -135,7 +140,7 @@ class SupportCoverageFilterSet(NetBoxModelFilterSet):
 
     class Meta:
         model = SupportCoverage
-        fields = ("id", "sku", "notes", "end_date")
+        fields = ("id", "sku", "quantity", "notes", "end_date")
 
     def search(self, queryset, name, value):
         if not value.strip():
@@ -144,6 +149,7 @@ class SupportCoverageFilterSet(NetBoxModelFilterSet):
             Q(sku__icontains=value)
             | Q(notes__icontains=value)
             | Q(contract__contract_number__icontains=value)
+            | Q(contract__reseller__icontains=value)
             | Q(device__name__icontains=value)
             | Q(device__serial__iexact=value.strip())
             | Q(virtual_machine__name__icontains=value)
@@ -218,6 +224,10 @@ class DeviceCoverageFilterSet(django_filters.FilterSet):
     manufacturer_id = django_filters.ModelMultipleChoiceFilter(
         field_name="device_type__manufacturer", queryset=Manufacturer.objects.all(), label=_("Manufacturer (ID)")
     )
+    contract_type = django_filters.MultipleChoiceFilter(
+        choices=ContractTypeChoices, method="filter_contract", label=_("Contract type")
+    )
+    reseller = django_filters.CharFilter(method="filter_contract", label=_("Reseller"))
 
     class Meta:
         model = Device
@@ -229,6 +239,14 @@ class DeviceCoverageFilterSet(django_filters.FilterSet):
         return queryset.filter(
             Q(name__icontains=value) | Q(serial__iexact=value.strip()) | Q(asset_tag__iexact=value.strip())
         )
+
+    def filter_contract(self, queryset, name, value):
+        """Devices covered by at least one contract of the given type(s) / whose reseller contains the value."""
+        if not value:
+            return queryset
+        lookup = {"contract_type": "contract__contract_type__in", "reseller": "contract__reseller__icontains"}[name]
+        covered = SupportCoverage.objects.filter(device__isnull=False, **{lookup: value}).values("device_id")
+        return queryset.filter(pk__in=covered)
 
     def filter_coverage(self, queryset, name, value):
         if not value:

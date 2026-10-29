@@ -98,6 +98,7 @@ class EndDateColumn(columns.DateColumn):
 
 class SupportContractTable(PrimaryModelTable):
     contract_number = tables.Column(verbose_name=_("Contract Number"), linkify=True)
+    contract_type = columns.ChoiceFieldColumn(verbose_name=_("Type"))
     manufacturer = tables.Column(verbose_name=_("Manufacturer"), linkify=True)
     tenant = tables.Column(verbose_name=_("Tenant"), linkify=True)
     state = StateColumn(verbose_name=pgettext_lazy("support contracts", "State"), order_by=("end_date",))
@@ -119,6 +120,11 @@ class SupportContractTable(PrimaryModelTable):
         url_params={"contract_id": "pk"},
         verbose_name=_("Modules"),
     )
+    sku_count = columns.LinkedCountColumn(
+        viewname="plugins:netbox_support_contracts:supportcoverage_list",
+        url_params={"contract_id": "pk"},
+        verbose_name=_("Licenses / SKUs"),
+    )
     portal_url = tables.URLColumn(verbose_name=_("Vendor Portal URL"))
     cost_display = tables.Column(verbose_name=_("Cost"), accessor="cost", order_by=("cost",))
     tags = columns.TagColumn(url_name="plugins:netbox_support_contracts:supportcontract_list")
@@ -126,13 +132,14 @@ class SupportContractTable(PrimaryModelTable):
     class Meta(PrimaryModelTable.Meta):
         model = SupportContract
         fields = (
-            "pk", "id", "contract_number", "manufacturer", "service_level", "state", "start_date", "end_date",
-            "days_remaining", "device_count", "vm_count", "module_count", "reseller", "cost_display", "portal_url",
-            "tenant", "description", "comments", "tags", "created", "last_updated", "actions",
+            "pk", "id", "contract_number", "contract_type", "manufacturer", "service_level", "state", "start_date",
+            "end_date", "days_remaining", "device_count", "vm_count", "module_count", "sku_count", "reseller",
+            "cost_display", "portal_url", "tenant", "description", "comments", "tags", "created", "last_updated",
+            "actions",
         )
         default_columns = (
-            "pk", "contract_number", "manufacturer", "service_level", "state", "start_date", "end_date",
-            "days_remaining", "device_count", "reseller", "description", "actions",
+            "pk", "contract_number", "contract_type", "manufacturer", "service_level", "state", "start_date",
+            "end_date", "days_remaining", "device_count", "reseller", "description", "actions",
         )
 
     def __init__(self, *args, **kwargs):
@@ -162,7 +169,10 @@ class SupportCoverageTable(NetBoxTable):
     site = tables.Column(verbose_name=_("Site"), accessor="device__site", linkify=True)
     virtual_machine = tables.Column(verbose_name=_("Virtual Machine"), linkify=True)
     module = tables.Column(verbose_name=_("Module"), linkify=True)
+    contract_type = columns.ChoiceFieldColumn(verbose_name=_("Contract Type"), accessor="contract__contract_type")
+    reseller = tables.Column(verbose_name=_("Reseller"), accessor="contract__reseller")
     sku = tables.Column(verbose_name=_("SKU"))
+    quantity = tables.Column(verbose_name=_("Quantity"))
     start_date = columns.DateColumn(verbose_name=_("Start Date"), accessor="contract__start_date")
     effective_end_date = EndDateColumn(
         verbose_name=_("End Date"), accessor="effective_end_date", order_by=("effective_end",)
@@ -176,13 +186,13 @@ class SupportCoverageTable(NetBoxTable):
     class Meta(NetBoxTable.Meta):
         model = SupportCoverage
         fields = (
-            "pk", "id", "contract", "manufacturer", "device", "device_serial", "device_type", "site",
-            "virtual_machine", "module", "sku", "start_date", "effective_end_date", "end_date", "state",
-            "days_remaining", "notes", "tags", "created", "last_updated", "actions",
+            "pk", "id", "contract", "contract_type", "manufacturer", "reseller", "device", "device_serial",
+            "device_type", "site", "virtual_machine", "module", "sku", "quantity", "start_date", "effective_end_date",
+            "end_date", "state", "days_remaining", "notes", "tags", "created", "last_updated", "actions",
         )
         default_columns = (
-            "pk", "contract", "device", "device_serial", "device_type", "site", "virtual_machine", "sku",
-            "start_date", "effective_end_date", "state", "days_remaining", "actions",
+            "pk", "contract", "reseller", "device", "device_serial", "device_type", "site", "virtual_machine", "sku",
+            "quantity", "start_date", "effective_end_date", "state", "days_remaining", "actions",
         )
 
 

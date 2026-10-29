@@ -96,6 +96,7 @@ class SupportCoverageViewSet(NetBoxModelViewSet):
                 modules=resolve_ids(request, Module, data["module_ids"], "module_ids"),
                 serials=data["serials"],
                 sku=data["sku"],
+                quantity=data["quantity"],
                 end_date=data["end_date"],
                 notes=data["notes"],
             )

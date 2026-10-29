@@ -188,6 +188,7 @@ class BulkAddCoverageView(CoveragePermissionView):
                 modules=form.cleaned_data["modules"],
                 serials=form.cleaned_data["serials"],
                 sku=form.cleaned_data["sku"],
+                quantity=form.cleaned_data["quantity"],
                 end_date=form.cleaned_data["end_date"],
                 notes=form.cleaned_data["notes"],
             )
@@ -210,6 +211,7 @@ class BulkAddCoverageView(CoveragePermissionView):
         retry = self.get_form(request, initial={
             "serials": "\n".join([*result.unmatched, *result.ambiguous]),
             "sku": form.cleaned_data["sku"],
+            "quantity": form.cleaned_data["quantity"],
             "end_date": form.cleaned_data["end_date"],
             "notes": form.cleaned_data["notes"],
         })

@@ -7,12 +7,13 @@ from dcim.api.serializers import (
 )
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
+from netbox.api.fields import ChoiceField
 from netbox.api.serializers import NetBoxModelSerializer, PrimaryModelSerializer
 from rest_framework import serializers
 from tenancy.api.serializers import TenantSerializer
 from virtualization.api.serializers import VirtualMachineSerializer
 
-from ..choices import ContractStateChoices
+from ..choices import ContractStateChoices, ContractTypeChoices
 from ..models import HardwareLifecycleEoL, SupportContract, SupportCoverage
 from ..services import MAX_BULK_ITEMS, may_view_cost, parse_serials
 
@@ -30,18 +31,20 @@ COST_FIELDS = ("cost", "currency")
 class SupportContractSerializer(PrimaryModelSerializer):
     manufacturer = ManufacturerSerializer(nested=True)
     tenant = TenantSerializer(nested=True, required=False, allow_null=True)
+    contract_type = ChoiceField(choices=ContractTypeChoices, required=False)
     state = serializers.ChoiceField(choices=ContractStateChoices, read_only=True)
     days_remaining = serializers.IntegerField(read_only=True, allow_null=True)
     device_count = serializers.SerializerMethodField()
     vm_count = serializers.SerializerMethodField()
     module_count = serializers.SerializerMethodField()
+    sku_count = serializers.SerializerMethodField()
 
     class Meta:
         model = SupportContract
         fields = (
-            "id", "url", "display_url", "display", "manufacturer", "contract_number", "service_level",
+            "id", "url", "display_url", "display", "manufacturer", "contract_number", "contract_type", "service_level",
             "start_date", "end_date", "state", "days_remaining", "reseller", "cost", "currency", "portal_url",
-            "renewal_notes", "tenant", "device_count", "vm_count", "module_count", "description", "owner",
+            "renewal_notes", "tenant", "device_count", "vm_count", "module_count", "sku_count", "description", "owner",
             "comments", "tags", "custom_fields", "created", "last_updated",
         )
         brief_fields = ("id", "url", "display", "contract_number", "end_date", "description")
@@ -67,20 +70,25 @@ class SupportContractSerializer(PrimaryModelSerializer):
                 )
         return super().to_internal_value(data)
 
-    def _count(self, obj, annotation, field):
+    def _count(self, obj, annotation, **lookups):
         value = getattr(obj, annotation, None)
         if value is None:
-            value = obj.coverage.filter(**{f"{field}__isnull": False}).count()
+            value = obj.coverage.filter(**lookups).count()
         return value
 
     def get_device_count(self, obj) -> int:
-        return self._count(obj, "device_count", "device")
+        return self._count(obj, "device_count", device__isnull=False)
 
     def get_vm_count(self, obj) -> int:
-        return self._count(obj, "vm_count", "virtual_machine")
+        return self._count(obj, "vm_count", virtual_machine__isnull=False)
 
     def get_module_count(self, obj) -> int:
-        return self._count(obj, "module_count", "module")
+        return self._count(obj, "module_count", module__isnull=False)
+
+    def get_sku_count(self, obj) -> int:
+        return self._count(
+            obj, "sku_count", device__isnull=True, virtual_machine__isnull=True, module__isnull=True
+        )
 
 
 class SupportCoverageSerializer(NetBoxModelSerializer):
@@ -96,8 +104,8 @@ class SupportCoverageSerializer(NetBoxModelSerializer):
         model = SupportCoverage
         fields = (
             "id", "url", "display_url", "display", "contract", "device", "virtual_machine", "module", "end_date",
-            "effective_end_date", "state", "days_remaining", "sku", "notes", "tags", "custom_fields", "created",
-            "last_updated",
+            "effective_end_date", "state", "days_remaining", "sku", "quantity", "notes", "tags", "custom_fields",
+            "created", "last_updated",
         )
         brief_fields = ("id", "url", "display", "contract", "sku")
 
@@ -151,6 +159,7 @@ class BulkAddCoverageSerializer(serializers.Serializer):
     module_ids = id_list()
     serials = SerialsField(required=False, default=list)
     sku = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    quantity = serializers.IntegerField(min_value=0, required=False, allow_null=True, default=None)
     end_date = serializers.DateField(required=False, allow_null=True, default=None)
     notes = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
 

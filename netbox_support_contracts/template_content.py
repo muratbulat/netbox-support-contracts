@@ -8,9 +8,9 @@ PLUGIN = "netbox_support_contracts"
 
 
 class CoveragePanel(PluginTemplateExtension):
-    """"Support & Warranty Coverage" card on device and virtual machine pages."""
+    """"Support & Warranty Coverage" card on device, virtual machine, and module pages."""
 
-    models = ["dcim.device", "virtualization.virtualmachine"]
+    models = ["dcim.device", "virtualization.virtualmachine", "dcim.module"]
 
     def right_page(self):
         user = self.context["request"].user
@@ -27,7 +27,7 @@ class CoveragePanel(PluginTemplateExtension):
             }
             for row in coverage["rows"]
         ]
-        param = "device" if obj._meta.model_name == "device" else "virtual_machine"
+        param = {"device": "device", "virtualmachine": "virtual_machine", "module": "module"}[obj._meta.model_name]
         return self.render(f"{PLUGIN}/inc/device_coverage_panel.html", extra_context={
             "coverage": coverage,
             "coverage_rows": rows,

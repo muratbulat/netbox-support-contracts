@@ -16,7 +16,9 @@ from netbox.forms import (
 )
 from tenancy.forms import TenancyForm
 from tenancy.models import Tenant
+from utilities.forms import add_blank_choice
 from utilities.forms.fields import (
+    CSVChoiceField,
     CSVModelChoiceField,
     DynamicModelChoiceField,
     DynamicModelMultipleChoiceField,
@@ -26,7 +28,7 @@ from utilities.forms.rendering import FieldSet
 from utilities.forms.widgets import DatePicker
 from virtualization.models import VirtualMachine
 
-from .choices import ContractStateChoices, CurrencyChoices
+from .choices import ContractStateChoices, ContractTypeChoices, CurrencyChoices
 from .models import HardwareLifecycleEoL, SupportContract, SupportCoverage
 from .services import MAX_BULK_ITEMS, may_view_cost, parse_serials
 
@@ -89,7 +91,10 @@ class SupportContractForm(CostPermissionMixin, TenancyForm, PrimaryModelForm):
     currency = forms.CharField(label=_("Currency"), max_length=3, required=False, help_text=CURRENCY_HELP)
 
     fieldsets = (
-        FieldSet("manufacturer", "contract_number", "service_level", "description", "tags", name=_("Contract")),
+        FieldSet(
+            "manufacturer", "contract_number", "contract_type", "service_level", "description", "tags",
+            name=_("Contract"),
+        ),
         FieldSet("start_date", "end_date", name=_("Term")),
         FieldSet("reseller", "portal_url", "cost", "currency", "renewal_notes", name=_("Commercial")),
         FieldSet("tenant_group", "tenant", name=_("Tenancy")),
@@ -98,9 +103,9 @@ class SupportContractForm(CostPermissionMixin, TenancyForm, PrimaryModelForm):
     class Meta:
         model = SupportContract
         fields = (
-            "manufacturer", "contract_number", "service_level", "start_date", "end_date", "reseller", "cost",
-            "currency", "portal_url", "renewal_notes", "tenant_group", "tenant", "description", "owner",
-            "comments", "tags",
+            "manufacturer", "contract_number", "contract_type", "service_level", "start_date", "end_date",
+            "reseller", "cost", "currency", "portal_url", "renewal_notes", "tenant_group", "tenant", "description",
+            "owner", "comments", "tags",
         )
         widgets = {
             "start_date": DatePicker(),
@@ -119,6 +124,9 @@ class SupportContractImportForm(CostPermissionMixin, PrimaryModelImportForm):
         to_field_name="name",
         help_text=_("Manufacturer name"),
     )
+    contract_type = CSVChoiceField(
+        label=_("Contract type"), choices=ContractTypeChoices, required=False, help_text=_("Contract type")
+    )
     tenant = CSVModelChoiceField(
         label=_("Tenant"),
         queryset=Tenant.objects.all(),
@@ -130,9 +138,13 @@ class SupportContractImportForm(CostPermissionMixin, PrimaryModelImportForm):
     class Meta:
         model = SupportContract
         fields = (
-            "manufacturer", "contract_number", "service_level", "start_date", "end_date", "reseller", "cost",
-            "currency", "portal_url", "renewal_notes", "tenant", "description", "owner", "comments", "tags",
+            "manufacturer", "contract_number", "contract_type", "service_level", "start_date", "end_date",
+            "reseller", "cost", "currency", "portal_url", "renewal_notes", "tenant", "description", "owner",
+            "comments", "tags",
         )
+
+    def clean_contract_type(self):
+        return self.cleaned_data.get("contract_type") or ContractTypeChoices.VENDOR_SUPPORT
 
     def clean_currency(self):
         return (self.cleaned_data.get("currency") or "").strip().upper()
@@ -142,6 +154,9 @@ class SupportContractBulkEditForm(CostPermissionMixin, PrimaryModelBulkEditForm)
     model = SupportContract
     manufacturer = DynamicModelChoiceField(
         label=_("Manufacturer"), queryset=Manufacturer.objects.all(), required=False
+    )
+    contract_type = forms.ChoiceField(
+        label=_("Contract type"), choices=add_blank_choice(ContractTypeChoices), required=False
     )
     service_level = forms.CharField(label=_("Service level"), max_length=64, required=False)
     start_date = forms.DateField(label=_("Start date"), required=False, widget=DatePicker())
@@ -153,7 +168,7 @@ class SupportContractBulkEditForm(CostPermissionMixin, PrimaryModelBulkEditForm)
     tenant = DynamicModelChoiceField(label=_("Tenant"), queryset=Tenant.objects.all(), required=False)
 
     fieldsets = (
-        FieldSet("manufacturer", "service_level", "description", name=_("Contract")),
+        FieldSet("manufacturer", "contract_type", "service_level", "description", name=_("Contract")),
         FieldSet("start_date", "end_date", name=_("Term")),
         FieldSet("reseller", "portal_url", "cost", "currency", name=_("Commercial")),
         FieldSet("tenant", name=_("Tenancy")),
@@ -171,13 +186,19 @@ class SupportContractFilterForm(PrimaryModelFilterSetForm):
     model = SupportContract
     fieldsets = (
         FieldSet("q", "filter_id", "tag"),
-        FieldSet("manufacturer_id", "state", "expiring_within_days", "service_level", "reseller", name=_("Contract")),
+        FieldSet(
+            "manufacturer_id", "contract_type", "state", "expiring_within_days", "service_level", "reseller",
+            name=_("Contract"),
+        ),
         FieldSet("device_id", "virtual_machine_id", name=_("Coverage")),
         FieldSet("tenant_id", name=_("Tenancy")),
         FieldSet("owner_group_id", "owner_id", name=_("Ownership")),
     )
     manufacturer_id = DynamicModelMultipleChoiceField(
         queryset=Manufacturer.objects.all(), required=False, label=_("Manufacturer")
+    )
+    contract_type = forms.MultipleChoiceField(
+        choices=ContractTypeChoices, required=False, label=_("Contract type")
     )
     state = forms.MultipleChoiceField(choices=ContractStateChoices, required=False, label=STATE)
     expiring_within_days = forms.IntegerField(min_value=0, required=False, label=_("Ends within (days)"))
@@ -213,12 +234,14 @@ class SupportCoverageForm(NetBoxModelForm):
     fieldsets = (
         FieldSet("contract", name=_("Contract")),
         FieldSet("device", "virtual_machine", "module", name=_("Covered object")),
-        FieldSet("sku", "end_date", "notes", "tags", name=_("Coverage")),
+        FieldSet("sku", "quantity", "end_date", "notes", "tags", name=_("Coverage")),
     )
 
     class Meta:
         model = SupportCoverage
-        fields = ("contract", "device", "virtual_machine", "module", "end_date", "sku", "notes", "tags")
+        fields = (
+            "contract", "device", "virtual_machine", "module", "end_date", "sku", "quantity", "notes", "tags",
+        )
         widgets = {"end_date": DatePicker()}
 
 
@@ -247,7 +270,10 @@ class SupportCoverageImportForm(NetBoxModelImportForm):
 
     class Meta:
         model = SupportCoverage
-        fields = ("contract", "manufacturer", "device", "virtual_machine", "module", "end_date", "sku", "notes", "tags")
+        fields = (
+            "contract", "manufacturer", "device", "virtual_machine", "module", "end_date", "sku", "quantity",
+            "notes", "tags",
+        )
 
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(data, *args, **kwargs)
@@ -256,24 +282,39 @@ class SupportCoverageImportForm(NetBoxModelImportForm):
 
 class SupportCoverageBulkEditForm(NetBoxModelBulkEditForm):
     model = SupportCoverage
+    contract = DynamicModelChoiceField(
+        label=_("Contract"),
+        queryset=SupportContract.objects.all(),
+        required=False,
+        selector=True,
+        help_text=_("Move selected coverage items to another contract (e.g. when switching annual support provider)."),
+    )
     end_date = forms.DateField(label=_("End date override"), required=False, widget=DatePicker())
     sku = forms.CharField(label=_("SKU / License Part Number"), max_length=100, required=False)
+    quantity = forms.IntegerField(label=_("Quantity"), min_value=0, required=False)
     notes = forms.CharField(label=_("Notes"), max_length=255, required=False)
 
-    fieldsets = (FieldSet("end_date", "sku", "notes"),)
-    nullable_fields = ("end_date", "sku", "notes")
+    fieldsets = (
+        FieldSet("contract", name=_("Contract")),
+        FieldSet("end_date", "sku", "quantity", "notes", name=_("Coverage")),
+    )
+    nullable_fields = ("end_date", "sku", "quantity", "notes")
 
 
 class SupportCoverageFilterForm(NetBoxModelFilterSetForm):
     model = SupportCoverage
     fieldsets = (
         FieldSet("q", "filter_id", "tag"),
-        FieldSet("contract_id", "manufacturer_id", "state", name=_("Contract")),
+        FieldSet("contract_id", "manufacturer_id", "contract_type", "reseller", "state", name=_("Contract")),
         FieldSet("object_type", "device_id", "virtual_machine_id", "module_id", "site_id", name=_("Covered object")),
     )
     contract_id = DynamicModelMultipleChoiceField(
         queryset=SupportContract.objects.all(), required=False, label=_("Contract")
     )
+    contract_type = forms.MultipleChoiceField(
+        choices=ContractTypeChoices, required=False, label=_("Contract type")
+    )
+    reseller = forms.CharField(required=False, label=_("Reseller"))
     manufacturer_id = DynamicModelMultipleChoiceField(
         queryset=Manufacturer.objects.all(), required=False, label=_("Manufacturer")
     )
@@ -394,9 +435,14 @@ class HardwareLifecycleEoLFilterForm(PrimaryModelFilterSetForm):
 class DeviceCoverageFilterForm(forms.Form):
     fieldsets = (
         FieldSet("q", "coverage"),
+        FieldSet("contract_type", "reseller", name=_("Contract")),
         FieldSet("manufacturer_id", "device_type_id", "site_id", "role_id", name=_("Device")),
     )
     q = forms.CharField(required=False, label=_("Search"))
+    contract_type = forms.MultipleChoiceField(
+        choices=ContractTypeChoices, required=False, label=_("Contract type")
+    )
+    reseller = forms.CharField(required=False, label=_("Reseller"))
     coverage = forms.MultipleChoiceField(
         choices=(
             ("covered", _("Covered")),
@@ -450,6 +496,10 @@ class BulkCoverageAddForm(forms.Form):
         ),
     )
     sku = forms.CharField(label=_("SKU / License Part Number"), max_length=100, required=False)
+    quantity = forms.IntegerField(
+        label=_("Quantity"), min_value=0, required=False,
+        help_text=_("License count, seats, sockets, or covered units (optional)."),
+    )
     end_date = forms.DateField(
         label=_("End date override"), required=False, widget=DatePicker(),
         help_text=_("Leave blank to follow the contract end date"),
@@ -460,7 +510,7 @@ class BulkCoverageAddForm(forms.Form):
         FieldSet("devices", "virtual_machines", "modules", name=_("Option A: Pick existing objects")),
         FieldSet("site", "device_type", "role", name=_("…or cover all matching devices")),
         FieldSet("serials", name=_("Option B: Paste serial numbers")),
-        FieldSet("sku", "end_date", "notes", name=_("Applied to each new coverage row")),
+        FieldSet("sku", "quantity", "end_date", "notes", name=_("Applied to each new coverage row")),
     )
 
     FILTER_FIELDS = ("site", "device_type", "role")
