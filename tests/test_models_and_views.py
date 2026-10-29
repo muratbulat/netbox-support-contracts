@@ -295,6 +295,15 @@ class CoverageWorkflowTests(ViewTestBase):
         self.assertIn("Not Covered", html)
         self.assertIn("CONT-2026-001", html)
         self.assertIn("?coverage=none", html)
+        add_url = reverse("extras:dashboardwidget_add")
+        response = self.client.get(add_url, HTTP_HX_REQUEST="true")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Support Coverage Summary")
+        post_response = self.client.post(add_url, {
+            "widget_class": f"{PLUGIN}.SupportCoverageSummaryWidget",
+            "config-limit": 8,
+        })
+        self.assertEqual(post_response.status_code, 200)
 
 
 class GlobalSearchTests(ViewTestBase):

@@ -20,6 +20,14 @@ class SupportCoverageSummaryWidget(DashboardWidget):
     width = 6
     height = 5
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.title is not None:
+            self.title = str(self.title)
+
+    def __str__(self):
+        return str(super().__str__())
+
     class ConfigForm(WidgetConfigForm):
         limit = forms.IntegerField(
             min_value=1, max_value=50, initial=8, label=_("Contracts listed"),
