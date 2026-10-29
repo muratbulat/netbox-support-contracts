@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
+from extras.filters import TagFilter, TagIDFilter
 from netbox.filtersets import NetBoxModelFilterSet, PrimaryModelFilterSet
 from tenancy.models import Tenant
 from utilities.filtersets import register_filterset
@@ -295,6 +296,8 @@ class DeviceCoverageFilterSet(django_filters.FilterSet):
     """Device-side coverage filters for the plugin's Device Coverage report (not registered for dcim.Device)."""
 
     q = django_filters.CharFilter(method="search", label=_("Search"))
+    tag = TagFilter()
+    tag_id = TagIDFilter()
     coverage = django_filters.MultipleChoiceFilter(
         choices=CoverageStatusChoices, method="filter_coverage", label=_("Coverage")
     )

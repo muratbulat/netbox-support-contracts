@@ -4,6 +4,7 @@ from django import forms
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
+from extras.models import Tag
 from netbox.context import current_request
 from netbox.forms import (
     NetBoxModelBulkEditForm,
@@ -569,7 +570,7 @@ class HardwareLifecycleEoLFilterForm(PrimaryModelFilterSetForm):
 
 class DeviceCoverageFilterForm(forms.Form):
     fieldsets = (
-        FieldSet("q", "coverage"),
+        FieldSet("q", "coverage", "tag"),
         FieldSet(
             "expiring_within_days", "coverage_end_after", "coverage_end_before", name=_("Coverage end window")
         ),
@@ -577,6 +578,7 @@ class DeviceCoverageFilterForm(forms.Form):
         FieldSet("status", "manufacturer_id", "device_type_id", "site_id", "role_id", name=_("Device")),
     )
     q = forms.CharField(required=False, label=_("Search"))
+    tag = TagFilterField(Device)
     expiring_within_days = forms.IntegerField(min_value=0, required=False, label=_("Coverage ends within (days)"))
     coverage_end_after = forms.DateField(required=False, widget=DatePicker(), label=_("Coverage ends on or after"))
     coverage_end_before = forms.DateField(
@@ -635,6 +637,7 @@ class BulkCoverageAddForm(forms.Form):
         label=_("Device type"), queryset=DeviceType.objects.all(), required=False
     )
     role = DynamicModelMultipleChoiceField(label=_("Role"), queryset=DeviceRole.objects.all(), required=False)
+    tag = DynamicModelMultipleChoiceField(label=_("Tag"), queryset=Tag.objects.all(), required=False)
     serials = forms.CharField(
         label=_("Serial numbers"),
         required=False,
@@ -668,7 +671,7 @@ class BulkCoverageAddForm(forms.Form):
 
     fieldsets = (
         FieldSet("devices", "virtual_machines", "modules", name=_("Option A: Pick existing objects")),
-        FieldSet("site", "device_type", "role", name=_("…or cover all matching devices")),
+        FieldSet("site", "device_type", "role", "tag", name=_("…or cover all matching devices")),
         FieldSet("serials", name=_("Option B: Paste serial numbers")),
         FieldSet(
             "sku", "quantity", "start_date", "end_date", "integrator", "notes",
@@ -676,7 +679,7 @@ class BulkCoverageAddForm(forms.Form):
         ),
     )
 
-    FILTER_FIELDS = ("site", "device_type", "role")
+    FILTER_FIELDS = ("site", "device_type", "role", "tag")
 
     def clean_serials(self):
         serials = parse_serials(self.cleaned_data.get("serials"))
@@ -702,9 +705,9 @@ class BulkCoverageAddForm(forms.Form):
         return any(self.cleaned_data.get(name) for name in self.FILTER_FIELDS)
 
     def filtered_devices(self, queryset):
-        """Apply the site / device type / role filters (ANDed) to a device queryset."""
-        lookups = {"site": "site__in", "device_type": "device_type__in", "role": "role__in"}
+        """Apply the site / device type / role / tag filters (ANDed) to a device queryset."""
+        lookups = {"site": "site__in", "device_type": "device_type__in", "role": "role__in", "tag": "tags__in"}
         for name, lookup in lookups.items():
             if values := self.cleaned_data.get(name):
                 queryset = queryset.filter(**{lookup: values})
-        return queryset
+        return queryset.distinct()

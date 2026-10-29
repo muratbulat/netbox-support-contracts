@@ -479,6 +479,7 @@ class DeviceCoverageTable(NetBoxTable):
     )
     integrator = SupportIntegratorColumn(verbose_name=_("Integrator Company"))
     maintenance_company = SupportMaintenanceCompanyColumn(verbose_name=_("Maintenance Company"))
+    tags = columns.TagColumn(url_name="plugins:netbox_support_contracts:device_coverage")
     actions = columns.ActionsColumn(actions=())
 
     class Meta(NetBoxTable.Meta):
@@ -486,11 +487,11 @@ class DeviceCoverageTable(NetBoxTable):
         fields = (
             "pk", "id", "name", "serial", "asset_tag", "status", "manufacturer", "device_type", "part_number", "site",
             "role", "end_of_support", "coverage", "coverage_end", "days_remaining", "integrator",
-            "maintenance_company", "contracts",
+            "maintenance_company", "contracts", "tags",
         )
         default_columns = (
             "name", "serial", "manufacturer", "device_type", "site", "coverage", "coverage_end", "days_remaining",
-            "maintenance_company", "contracts",
+            "maintenance_company", "contracts", "tags",
         )
 
     def render_coverage(self, value):

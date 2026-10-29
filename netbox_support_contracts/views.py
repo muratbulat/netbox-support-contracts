@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy, pgettext_lazy
 from django.views.generic import View
+from extras.models import Tag
 from extras.ui.panels import CustomFieldsPanel, TagsPanel
 from netbox.object_actions import AddObject, BulkDelete, BulkEdit, BulkExport, BulkImport
 from netbox.ui import attrs, layout, panels
@@ -195,7 +196,7 @@ class BulkAddCoverageView(CoveragePermissionView):
         # Only objects the user may view can be picked (and covered).
         restricted = {
             "devices": Device, "virtual_machines": VirtualMachine, "modules": Module,
-            "site": Site, "device_type": DeviceType, "role": DeviceRole, "integrator": Integrator,
+            "site": Site, "device_type": DeviceType, "role": DeviceRole, "tag": Tag, "integrator": Integrator,
         }
         for name, model in restricted.items():
             form.fields[name].queryset = model.objects.restrict(request.user, "view")

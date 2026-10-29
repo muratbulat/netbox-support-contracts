@@ -117,6 +117,15 @@ class DeviceCoverageFilterTests(ExportFixtures, TestCase):
         )
         self.assertEqual(self.names(contract_type=["warranty"]), ["Storage-01", "Storage-02", "Storage-03"])
 
+    def test_tag_filter(self):
+        from extras.models import Tag
+
+        tag = Tag.objects.create(name="parça-bakım", slug="parca-bakim")
+        self.stor_1.tags.add(tag)
+        self.server.tags.add(tag)
+        self.assertEqual(self.names(tag=["parca-bakim"]), ["Server-01", "Storage-01"])
+        self.assertEqual(self.names(tag_id=[tag.pk]), ["Server-01", "Storage-01"])
+
 
 @override_settings(LOGIN_REQUIRED=True, EXEMPT_VIEW_PERMISSIONS=[])
 class ProviderExportTests(ExportFixtures, TestCase):
