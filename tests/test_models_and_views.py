@@ -214,7 +214,9 @@ class CoverageWorkflowTests(ViewTestBase):
     def test_add_devices_by_serial_with_review(self):
         self.add_permissions(f"{PLUGIN}.add_supportcoverage")
         page = url("supportcontract_add_devices", self.contract.pk)
-        self.assertEqual(self.client.get(page).status_code, 200)
+        get_response = self.client.get(page)
+        self.assertEqual(get_response.status_code, 200)
+        self.assertContains(get_response, 'id="htmx-modal"')
         response = self.client.post(page, {"serials": "sn-10001\nSN-10002\nSN-99999"})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "1 added")
