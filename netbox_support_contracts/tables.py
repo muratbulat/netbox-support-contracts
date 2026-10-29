@@ -1,5 +1,6 @@
 import django_tables2 as tables
 from dcim.models import Device
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
@@ -8,7 +9,15 @@ from netbox.tables import NetBoxTable, PrimaryModelTable, columns
 
 from .choices import ContractStateChoices, CoverageStatusChoices
 from .models import HardwareLifecycleEoL, SupportContract, SupportCoverage
-from .services import OPEN_ENDED, coverage_status, days_label, days_until, get_warning_days, may_view_cost
+from .services import (
+    OPEN_ENDED,
+    contract_state,
+    coverage_status,
+    days_label,
+    days_until,
+    get_warning_days,
+    may_view_cost,
+)
 
 __all__ = (
     "DeviceCoverageTable",
@@ -17,6 +26,7 @@ __all__ = (
     "SupportCoverageTable",
     "coverage_badge",
     "days_badge",
+    "register_core_columns",
     "state_badge",
 )
 
@@ -286,3 +296,147 @@ class DeviceCoverageTable(NetBoxTable):
 
     def value_days_remaining(self, value):
         return None if value in (None, OPEN_ENDED) else days_until(value)
+
+
+#
+# Columns on NetBox's core tables (Devices, Virtual Machines, Modules, Device/Module Types)
+#
+
+def _request_user_may(permission):
+    request = current_request.get()
+    user = getattr(request, "user", None)
+    return bool(user is not None and user.has_perm(f"netbox_support_contracts.{permission}"))
+
+
+def _coverage_rows(record):
+    """The record's prefetched coverage rows, or None when the user may not view coverage."""
+    if not _request_user_may("view_supportcoverage"):
+        return None
+    return list(record.support_coverage.all())
+
+
+def _latest_end(rows):
+    """Latest effective end date across coverage rows: None = not covered, OPEN_ENDED = open-ended."""
+    if not rows:
+        return None
+    return max(row.end_date or row.contract.end_date or OPEN_ENDED for row in rows)
+
+
+class CoreCoverageColumn(tables.Column):
+    """Base for columns added to core tables; prefetches support_coverage__contract when enabled."""
+
+    empty_values = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, accessor=tables.A("support_coverage__contract"), orderable=False, **kwargs)
+
+    def render(self, record):
+        rows = _coverage_rows(record)
+        return "—" if rows is None else self.render_rows(rows)
+
+    def value(self, record):
+        rows = _coverage_rows(record)
+        return "" if rows is None else self.value_rows(rows)
+
+
+class SupportCoverageStatusColumn(CoreCoverageColumn):
+    def render_rows(self, rows):
+        return coverage_badge(coverage_status(_latest_end(rows)))
+
+    def value_rows(self, rows):
+        return str(dict(CoverageStatusChoices)[coverage_status(_latest_end(rows))])
+
+
+class SupportEndDateColumn(CoreCoverageColumn):
+    def render_rows(self, rows):
+        latest = _latest_end(rows)
+        if latest is None:
+            return "—"
+        return _("Open-ended") if latest == OPEN_ENDED else latest.isoformat()
+
+    def value_rows(self, rows):
+        latest = _latest_end(rows)
+        return "" if latest in (None, OPEN_ENDED) else latest.isoformat()
+
+
+class SupportDaysRemainingColumn(CoreCoverageColumn):
+    def render_rows(self, rows):
+        latest = _latest_end(rows)
+        if latest is None:
+            return "—"
+        return days_badge(None if latest == OPEN_ENDED else days_until(latest))
+
+    def value_rows(self, rows):
+        latest = _latest_end(rows)
+        return "" if latest in (None, OPEN_ENDED) else days_until(latest)
+
+
+class SupportResellerColumn(CoreCoverageColumn):
+    @staticmethod
+    def resellers(rows):
+        """Distinct resellers of the contracts still covering the object (not expired), in first-seen order."""
+        names = []
+        for row in rows:
+            if row.state != ContractStateChoices.EXPIRED and row.contract.reseller not in names:
+                names.append(row.contract.reseller)
+        return ", ".join(name for name in names if name)
+
+    def render_rows(self, rows):
+        return self.resellers(rows) or "—"
+
+    def value_rows(self, rows):
+        return self.resellers(rows)
+
+
+class EndOfSupportColumn(tables.Column):
+    """End of Support date and support state of a device/module type's lifecycle record."""
+
+    empty_values = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, accessor=tables.A("support_eol"), orderable=False, **kwargs)
+
+    @staticmethod
+    def end_of_support(record):
+        if not _request_user_may("view_hardwarelifecycleeol"):
+            return None
+        try:
+            return record.support_eol.end_of_support
+        except ObjectDoesNotExist:
+            return None
+
+    def render(self, record):
+        eos = self.end_of_support(record)
+        if eos is None:
+            return "—"
+        return format_html("{} {}", eos.isoformat(), state_badge(contract_state(eos)))
+
+    def value(self, record):
+        eos = self.end_of_support(record)
+        return eos.isoformat() if eos else ""
+
+
+CORE_COVERAGE_COLUMNS = {
+    "support_coverage_status": (SupportCoverageStatusColumn, _("Support Coverage")),
+    "support_end_date": (SupportEndDateColumn, _("Support End Date")),
+    "support_days_remaining": (SupportDaysRemainingColumn, _("Support Days Remaining")),
+    "support_reseller": (SupportResellerColumn, _("Support Reseller")),
+}
+
+
+def register_core_columns():
+    """Offer the plugin's columns under "Configure Table" on NetBox's core tables. Safe to call repeatedly."""
+    from dcim.tables import DeviceTable, DeviceTypeTable, ModuleTable, ModuleTypeTable
+    from netbox.registry import registry
+    from utilities.tables import register_table_column
+    from virtualization.tables import VirtualMachineTable
+
+    def register(column, name, table):
+        if name not in registry["tables"][table]:
+            register_table_column(column, name, table)
+
+    for table in (DeviceTable, VirtualMachineTable, ModuleTable):
+        for name, (column_class, label) in CORE_COVERAGE_COLUMNS.items():
+            register(column_class(verbose_name=label), name, table)
+    for table in (DeviceTypeTable, ModuleTypeTable):
+        register(EndOfSupportColumn(verbose_name=_("End of Support")), "end_of_support", table)

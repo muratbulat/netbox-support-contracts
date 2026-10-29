@@ -29,6 +29,9 @@ class NetBoxSupportContractsConfig(PluginConfig):
         super().ready()
         # Registers the dashboard widget, the daily expiry job, and its event types.
         from . import jobs, widgets  # noqa: F401
+        from .tables import register_core_columns
+
+        register_core_columns()
 
 
 config = NetBoxSupportContractsConfig

@@ -14,14 +14,19 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
 
 ## Features
 
-- **Support contracts**: manufacturer, contract number (unique per manufacturer, case-insensitive), service level,
-  term, reseller, vendor portal link, renewal notes, tenant, and commercial cost.
+- **Support contracts**: manufacturer, contract number (unique per manufacturer, case-insensitive), contract type
+  (OEM warranty, vendor support / care pack, third-party maintenance, or software license / subscription), service
+  level, term, reseller or provider, vendor portal link, renewal notes, tenant, and commercial cost.
 - **Live state, never stale**: *Active*, *Expiring*, and *Expired* states and the days remaining are computed from the
   end date whenever they're read; nothing is stored. A blank end date means open-ended, and the end date is the last
   covered day.
 - **Coverage**: link a contract to existing devices, VMs, or modules. Optionally set an end date for a single item
-  (the contract's end date applies otherwise) plus a SKU or license part number. A row with only a SKU records a
-  contract-level license that isn't tied to one object.
+  (the contract's end date applies otherwise), a SKU or license part number, and a quantity (seats, sockets, or
+  units). A row with only a SKU records a contract-level license that isn't tied to one object, such as 250 office
+  suite licenses. The contract page counts these under *Licenses / SKUs*.
+- **Changing providers**: filter coverage by reseller or contract type, select the rows, and use **Edit Selected**
+  to move them to the new provider's contract in one step. If any moved row would duplicate existing coverage, the
+  whole batch is rolled back.
 - **Bulk coverage workflow**: on a contract, choose **Add Devices / Serials** and:
   - **Option A**: pick devices, VMs, or modules, or cover every device matching a site / device type / role filter.
   - **Option B**: paste up to 5,000 serial numbers, separated by newlines, commas, semicolons, or spaces. Matching
@@ -29,9 +34,13 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
     device is reported as *ambiguous* and never guessed. Any serial numbers that are unmatched or ambiguous are put
     back into the form so you can fix them.
   - **Remove Selected** on the *Covered Devices & Objects* tab removes coverage in bulk.
-- **Device and VM panel**: a *Support & Warranty Coverage* card showing the overall coverage badge (Covered,
-  Expiring, Expired, or Not covered), the effective end date and days remaining, the covering contracts, and an
-  **Assign Contract** button.
+- **Columns on NetBox's own lists**: under *Configure Table*, the Devices, Virtual Machines, and Modules lists
+  offer *Support Coverage*, *Support End Date*, *Support Days Remaining*, and *Support Reseller*. Device Types and
+  Module Types offer *End of Support*. These columns show "—" to users without view permission on coverage
+  (or on lifecycle records, for *End of Support*).
+- **Device, VM, and module panel**: a *Support & Warranty Coverage* card showing the overall coverage badge (Covered,
+  Expiring, Expired, or Not covered), the effective end date and days remaining, the covering contracts with their
+  type and reseller, and an **Assign Contract** button.
 - **Hardware lifecycle**: End-of-Sale, End-of-Maintenance, and End-of-Support dates per device type or module type,
   shown on the type's page. Device panels flag conflicts:
   - *End-of-life hardware under active support contract*
