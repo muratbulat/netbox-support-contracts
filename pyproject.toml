@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netbox-support-contracts"
+version = "1.0.0"
+description = "Enterprise support contract, warranty coverage, and hardware EoL tracking for NetBox"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "muratbulat" }]
+keywords = ["netbox", "netbox-plugin", "support", "warranty", "contracts", "lifecycle", "eol"]
+# No runtime dependencies: Django, DRF, strawberry and friends are provided by the host NetBox.
+dependencies = []
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Django",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: System :: Networking",
+]
+
+[project.urls]
+Homepage = "https://github.com/muratbulat/netbox-support-contracts"
+Source = "https://github.com/muratbulat/netbox-support-contracts"
+Issues = "https://github.com/muratbulat/netbox-support-contracts/issues"
+
+[tool.setuptools.packages.find]
+include = ["netbox_support_contracts*"]
+
+[tool.setuptools.package-data]
+netbox_support_contracts = ["templates/**/*.html"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["netbox_support_contracts/migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ", "S", "C4", "SIM"]
+ignore = ["S101", "S308", "DJ001"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["netbox_support_contracts"]
+known-third-party = [
+    "netbox", "utilities", "ipam", "dcim", "virtualization", "core", "extras", "users", "tenancy",
+]

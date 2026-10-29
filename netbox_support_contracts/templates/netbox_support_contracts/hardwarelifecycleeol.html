@@ -1,0 +1,90 @@
+{% extends 'generic/object.html' %}
+{% load helpers %}
+{% load plugins %}
+{% load i18n %}
+
+{% block content %}
+  <div class="row mb-3">
+    <div class="col col-12 col-md-6">
+      <div class="card">
+        <h2 class="card-header">{% trans "Hardware" %}</h2>
+        <table class="table table-hover attr-table">
+          <tr>
+            <th scope="row">{% trans "Manufacturer" %}</th>
+            <td>{{ object.manufacturer|linkify|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Device Type" %}</th>
+            <td>{{ object.device_type|linkify|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Module Type" %}</th>
+            <td>{{ object.module_type|linkify|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Description" %}</th>
+            <td>{{ object.description|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Covered Objects" %}</th>
+            <td>
+              {{ covered_count }}
+              {% if covered_past_eos_count %}
+                <span class="badge text-bg-orange ms-1" title="{% trans "Coverage rows ending after End of Support" %}">
+                  {% blocktrans with count=covered_past_eos_count %}{{ count }} past EoS{% endblocktrans %}
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+      </div>
+      {% include 'inc/panels/custom_fields.html' %}
+      {% include 'inc/panels/tags.html' %}
+      {% plugin_left_page object %}
+    </div>
+    <div class="col col-12 col-md-6">
+      <div class="card">
+        <h2 class="card-header">{% trans "Vendor Lifecycle" %}</h2>
+        <table class="table table-hover attr-table">
+          <tr>
+            <th scope="row">{% trans "End of Sale" %}</th>
+            <td>{{ object.end_of_sale|isodate|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "End of Maintenance" %}</th>
+            <td>{{ object.end_of_maintenance|isodate|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "End of Support" %}</th>
+            <td>{{ object.end_of_support|isodate|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Support State" %}</th>
+            <td>{{ state_badge|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Days Remaining" %}</th>
+            <td>{{ days_badge|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Vendor Notice" %}</th>
+            <td>
+              {% if object.notice_url %}
+                <a href="{{ object.notice_url }}" target="_blank" rel="noopener noreferrer">{{ object.notice_url }}</a>
+              {% else %}
+                {{ ''|placeholder }}
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+      </div>
+      {% include 'inc/panels/comments.html' %}
+      {% plugin_right_page object %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col col-md-12">
+      {% plugin_full_width_page object %}
+    </div>
+  </div>
+{% endblock content %}

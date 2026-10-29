@@ -1,0 +1,72 @@
+{% load helpers %}
+{% load i18n %}
+<div class="card">
+  <h2 class="card-header">
+    {% trans "Support &amp; Warranty Coverage" %}
+    {% if can_add %}
+      <div class="card-actions">
+        <a href="{% url 'plugins:netbox_support_contracts:supportcoverage_add' %}?{{ assign_param }}={{ object.pk }}&return_url={{ object.get_absolute_url|urlencode }}" class="btn btn-ghost-primary btn-sm">
+          <i class="mdi mdi-plus-thick" aria-hidden="true"></i> {% trans "Assign Contract" %}
+        </a>
+      </div>
+    {% endif %}
+  </h2>
+  {% for flag in coverage.flags %}
+    <div class="alert alert-warning m-2 mb-0" role="alert" data-flag="{{ flag.code }}">
+      <i class="mdi mdi-alert" aria-hidden="true"></i>
+      <strong>{{ flag.message }}</strong>
+      <span class="text-muted">({% trans "End of Support" %}: {{ flag.end_of_support|isodate }})</span>
+    </div>
+  {% endfor %}
+  <table class="table table-hover attr-table">
+    <tr>
+      <th scope="row">{% trans "Coverage" %}</th>
+      <td>{{ status_badge }}</td>
+    </tr>
+    <tr>
+      <th scope="row">{% trans "Coverage End" %}</th>
+      <td>
+        {% if coverage.open_ended %}
+          <span class="text-muted">{% trans "Open-ended" %}</span>
+        {% elif coverage.end_date %}
+          {{ coverage.end_date|isodate }}
+        {% else %}
+          {{ ''|placeholder }}
+        {% endif %}
+        {% if summary_days_badge %}<span class="ms-1">{{ summary_days_badge }}</span>{% endif %}
+      </td>
+    </tr>
+  </table>
+  {% if coverage_rows %}
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th>{% trans "Contract #" %}</th>
+            <th>{% trans "Manufacturer" %}</th>
+            <th>{% trans "SLA" %}</th>
+            <th>{% trans "End Date" %}</th>
+            <th>{% trans "Days Remaining" %}</th>
+            <th>{% trans "State" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in coverage_rows %}
+            <tr>
+              <td><a href="{{ row.coverage.get_absolute_url }}">{{ row.contract.contract_number }}</a></td>
+              <td>{{ row.contract.manufacturer }}</td>
+              <td>{{ row.contract.service_level|placeholder }}</td>
+              <td>
+                {% if row.coverage.effective_end_date %}{{ row.coverage.effective_end_date|isodate }}{% else %}<span class="text-muted">{% trans "Open-ended" %}</span>{% endif %}
+              </td>
+              <td>{{ row.days_badge }}</td>
+              <td>{{ row.state_badge }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="card-body text-muted">{% trans "No support contract covers this object." %}</div>
+  {% endif %}
+</div>

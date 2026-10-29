@@ -1,0 +1,48 @@
+{% load helpers %}
+{% load i18n %}
+{% if not permitted %}
+  <div class="text-muted p-2">{% trans "No permission to view support contracts." %}</div>
+{% else %}
+  <div class="row g-2 mb-3">
+    {% for kpi in kpis %}
+      <div class="col-6 col-md-3">
+        <a href="{{ kpi.url }}" class="card card-sm text-decoration-none h-100">
+          <div class="card-body text-center p-2">
+            <div class="h2 mb-0 text-{{ kpi.color }}">{{ kpi.count }}</div>
+            <div class="text-secondary small">{{ kpi.label }}</div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+  <div class="text-secondary small mb-1">
+    {% blocktrans with total=total %}{{ total }} devices in scope{% endblocktrans %} ·
+    <a href="{{ contract_list_url }}?state=expiring">{% trans "Soonest Expiring Contracts" %}</a>
+  </div>
+  {% if contracts %}
+    <table class="table table-sm table-hover mb-0">
+      <thead>
+        <tr>
+          <th>{% trans "Contract #" %}</th>
+          <th>{% trans "Manufacturer" %}</th>
+          <th class="text-end">{% trans "Devices" %}</th>
+          <th>{% trans "End Date" %}</th>
+          <th>{% trans "Days Remaining" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in contracts %}
+          <tr>
+            <td>{{ row.contract|linkify:"contract_number" }}</td>
+            <td>{{ row.contract.manufacturer }}</td>
+            <td class="text-end">{{ row.contract.device_count }}</td>
+            <td>{{ row.contract.end_date|isodate }}</td>
+            <td>{{ row.days_badge }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="text-muted">{% trans "No upcoming contract expirations." %}</div>
+  {% endif %}
+{% endif %}

@@ -1,0 +1,51 @@
+{% load helpers %}
+{% load i18n %}
+<div class="card">
+  <h2 class="card-header">
+    {% trans "Vendor Lifecycle (EoL)" %}
+    <div class="card-actions">
+      {% if eol %}
+        {% if perms.netbox_support_contracts.change_hardwarelifecycleeol %}
+          <a href="{% url 'plugins:netbox_support_contracts:hardwarelifecycleeol_edit' pk=eol.pk %}?return_url={{ object.get_absolute_url|urlencode }}" class="btn btn-ghost-warning btn-sm">
+            <i class="mdi mdi-pencil" aria-hidden="true"></i> {% trans "Edit" %}
+          </a>
+        {% endif %}
+      {% elif can_add %}
+        <a href="{% url 'plugins:netbox_support_contracts:hardwarelifecycleeol_add' %}?{{ type_param }}={{ object.pk }}&return_url={{ object.get_absolute_url|urlencode }}" class="btn btn-ghost-primary btn-sm">
+          <i class="mdi mdi-plus-thick" aria-hidden="true"></i> {% trans "Set Lifecycle Dates" %}
+        </a>
+      {% endif %}
+    </div>
+  </h2>
+  {% if eol %}
+    <table class="table table-hover attr-table">
+      <tr>
+        <th scope="row">{% trans "End of Sale" %}</th>
+        <td>{{ eol.end_of_sale|isodate|placeholder }}</td>
+      </tr>
+      <tr>
+        <th scope="row">{% trans "End of Maintenance" %}</th>
+        <td>{{ eol.end_of_maintenance|isodate|placeholder }}</td>
+      </tr>
+      <tr>
+        <th scope="row">{% trans "End of Support" %}</th>
+        <td>
+          {{ eol.end_of_support|isodate|placeholder }}
+          {% if days_badge %}<span class="ms-1">{{ days_badge }}</span>{% endif %}
+        </td>
+      </tr>
+      <tr>
+        <th scope="row">{% trans "Vendor Notice" %}</th>
+        <td>
+          {% if eol.notice_url %}
+            <a href="{{ eol.notice_url }}" target="_blank" rel="noopener noreferrer">{% trans "View notice" %}</a>
+          {% else %}
+            {{ ''|placeholder }}
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  {% else %}
+    <div class="card-body text-muted">{% trans "No lifecycle dates recorded." %}</div>
+  {% endif %}
+</div>

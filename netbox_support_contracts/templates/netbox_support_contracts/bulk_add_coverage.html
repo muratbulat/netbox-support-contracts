@@ -1,0 +1,64 @@
+{% extends 'generic/_base.html' %}
+{% load form_helpers %}
+{% load helpers %}
+{% load i18n %}
+
+{% block title %}{% blocktrans with contract=object %}Add Devices to {{ contract }}{% endblocktrans %}{% endblock %}
+
+{% block subtitle %}
+  <div class="text-secondary fs-5">
+    {{ object.manufacturer }}{% if object.service_level %} · {{ object.service_level }}{% endif %}
+    · {% if object.end_date %}{% trans "ends" %} {{ object.end_date|isodate }}{% else %}{% trans "open-ended" %}{% endif %}
+  </div>
+{% endblock subtitle %}
+
+{% block content %}
+  {% if result %}
+    <div class="card mb-3" id="bulk-add-result">
+      <div class="card-body">
+        <h2 class="card-title h4">{% trans "Result" %}</h2>
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          <span class="badge text-bg-green fs-5">{% blocktrans count counter=result.created|length %}{{ counter }} added{% plural %}{{ counter }} added{% endblocktrans %}</span>
+          <span class="badge text-bg-secondary fs-5">{% blocktrans count counter=result.existing|length %}{{ counter }} already covered{% plural %}{{ counter }} already covered{% endblocktrans %}</span>
+          <span class="badge text-bg-red fs-5">{% blocktrans count counter=result.unmatched|length %}{{ counter }} not found{% plural %}{{ counter }} not found{% endblocktrans %}</span>
+          <span class="badge text-bg-orange fs-5">{% blocktrans count counter=result.ambiguous|length %}{{ counter }} ambiguous{% plural %}{{ counter }} ambiguous{% endblocktrans %}</span>
+        </div>
+        {% if result.unmatched %}
+          <p class="mb-1"><strong>{% trans "Not found" %}:</strong>
+            {% for serial in result.unmatched %}<code class="me-1">{{ serial }}</code>{% endfor %}
+          </p>
+        {% endif %}
+        {% if result.ambiguous %}
+          <p class="mb-1"><strong>{% trans "Ambiguous (serial shared by several devices; never guessed)" %}:</strong>
+            {% for serial in result.ambiguous %}<code class="me-1">{{ serial }}</code>{% endfor %}
+          </p>
+        {% endif %}
+        <p class="text-muted mb-0">
+          {% trans "The serial numbers that still need attention are pre-filled below. Fix them and submit again, or pick the devices manually." %}
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+  <form action="" method="post" class="object-edit object-edit--with-sticky-actions mt-3">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+      </div>
+    {% endif %}
+    <div id="form_fields" hx-disinherit="hx-select hx-swap">
+      {% for fieldset in form.fieldsets %}
+        {% render_fieldset form fieldset %}
+      {% endfor %}
+    </div>
+    <div class="sticky-actions sticky-actions-footer d-print-none" data-sticky-position="full" data-sticky-when="always">
+      <div class="btn-list">
+        <a href="{{ return_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="mdi mdi-plus-thick" aria-hidden="true"></i> {% trans "Add Coverage" %}
+        </button>
+      </div>
+    </div>
+  </form>
+{% endblock content %}
