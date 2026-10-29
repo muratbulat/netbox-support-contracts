@@ -14,8 +14,9 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
 
 ## Features
 
-- **Support contracts**: manufacturer (NetBox's own), contract number, contract type (OEM warranty, vendor support /
-  care pack, third-party maintenance, or software license / subscription), service level, term, integrator company,
+- **Support contracts**: manufacturer (NetBox's own), contract number, contract type (*Warranty* for OEM warranty,
+  *Vendor* for vendor support / care packs, *Maintenance Company* for third-party maintenance, or *Software /
+  License*), service level, term, integrator company,
   maintenance company, vendor portal link, renewal notes, tenant, and commercial cost. Third-party maintenance
   contracts can cover several vendors' hardware, so they may name only a maintenance company. Contract numbers are
   unique (ignoring case) per manufacturer, or per maintenance company when there is no manufacturer.

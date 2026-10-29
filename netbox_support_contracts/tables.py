@@ -36,6 +36,8 @@ __all__ = (
 
 
 DEVICES = pgettext_lazy("support contracts", "Devices")
+# Keeps ISO dates (2026-03-13) and badges on one line instead of wrapping in narrow columns.
+NOWRAP = {"td": {"class": "text-nowrap"}}
 
 
 #
@@ -73,7 +75,19 @@ def days_badge(days, warning_days=None):
 # Columns
 #
 
-class StateColumn(tables.Column):
+class NoWrapMixin:
+    """Defaults the column's cells to NOWRAP."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("attrs", NOWRAP)
+        super().__init__(*args, **kwargs)
+
+
+class DateColumn(NoWrapMixin, columns.DateColumn):
+    """ISO date that never wraps."""
+
+
+class StateColumn(NoWrapMixin, tables.Column):
     """Computed lifecycle state of the row (record.state) as a colored badge."""
 
     empty_values = ()
@@ -85,7 +99,7 @@ class StateColumn(tables.Column):
         return record.state
 
 
-class DaysRemainingColumn(tables.Column):
+class DaysRemainingColumn(NoWrapMixin, tables.Column):
     """Computed days remaining (record.days_remaining) as a colored badge."""
 
     empty_values = ()
@@ -97,7 +111,7 @@ class DaysRemainingColumn(tables.Column):
         return record.days_remaining
 
 
-class EndDateColumn(columns.DateColumn):
+class EndDateColumn(DateColumn):
     """End date, or "Open-ended" when blank."""
 
     empty_values = ()
@@ -151,7 +165,7 @@ class CoreCoverageColumn(tables.Column):
         return "" if rows is None else self.value_rows(rows)
 
 
-class SupportCoverageStatusColumn(CoreCoverageColumn):
+class SupportCoverageStatusColumn(NoWrapMixin, CoreCoverageColumn):
     def render_rows(self, rows):
         return coverage_badge(coverage_status(_latest_end(rows)))
 
@@ -159,7 +173,7 @@ class SupportCoverageStatusColumn(CoreCoverageColumn):
         return str(dict(CoverageStatusChoices)[coverage_status(_latest_end(rows))])
 
 
-class SupportEndDateColumn(CoreCoverageColumn):
+class SupportEndDateColumn(NoWrapMixin, CoreCoverageColumn):
     def render_rows(self, rows):
         latest = _latest_end(rows)
         if latest is None:
@@ -171,7 +185,7 @@ class SupportEndDateColumn(CoreCoverageColumn):
         return "" if latest in (None, OPEN_ENDED) else latest.isoformat()
 
 
-class SupportDaysRemainingColumn(CoreCoverageColumn):
+class SupportDaysRemainingColumn(NoWrapMixin, CoreCoverageColumn):
     def render_rows(self, rows):
         latest = _latest_end(rows)
         if latest is None:
@@ -207,7 +221,7 @@ class SupportMaintenanceCompanyColumn(CoreCoverageColumn):
         return maintenance_company_names(rows)
 
 
-class EndOfSupportColumn(tables.Column):
+class EndOfSupportColumn(NoWrapMixin, tables.Column):
     """End of Support date and support state of a device/module type's lifecycle record."""
 
     empty_values = ()
@@ -293,11 +307,11 @@ class SupportContractTable(PrimaryModelTable):
     contract_number = tables.Column(verbose_name=_("Contract Number"), linkify=True)
     contract_type = columns.ChoiceFieldColumn(verbose_name=_("Type"))
     manufacturer = tables.Column(verbose_name=_("Manufacturer"), linkify=True)
-    integrator = tables.Column(verbose_name=_("Integrator Company"), linkify=True)
+    integrator = tables.Column(verbose_name=_("Integrator"), linkify=True)
     maintenance_company = tables.Column(verbose_name=_("Maintenance Company"), linkify=True)
     tenant = tables.Column(verbose_name=_("Tenant"), linkify=True)
     state = StateColumn(verbose_name=pgettext_lazy("support contracts", "State"), order_by=("end_date",))
-    start_date = columns.DateColumn(verbose_name=_("Start Date"))
+    start_date = DateColumn(verbose_name=_("Start Date"))
     end_date = EndDateColumn(verbose_name=_("End Date"))
     days_remaining = DaysRemainingColumn(verbose_name=_("Days Remaining"), order_by=("end_date",))
     device_count = columns.LinkedCountColumn(
@@ -329,14 +343,12 @@ class SupportContractTable(PrimaryModelTable):
         fields = (
             "pk", "id", "contract_number", "contract_type", "manufacturer", "service_level", "state", "start_date",
             "end_date", "days_remaining", "device_count", "vm_count", "module_count", "sku_count", "integrator",
-            "maintenance_company",
-            "cost_display", "portal_url", "tenant", "description", "comments", "tags", "created", "last_updated",
-            "actions",
+            "maintenance_company", "cost_display", "portal_url", "tenant", "description", "comments", "tags", "created",
+            "last_updated", "actions",
         )
         default_columns = (
-            "pk", "contract_number", "contract_type", "manufacturer", "service_level", "state", "start_date",
-            "end_date", "days_remaining", "device_count", "integrator", "maintenance_company", "description",
-            "actions",
+            "pk", "contract_number", "contract_type", "manufacturer", "integrator", "maintenance_company",
+            "state", "end_date", "days_remaining", "device_count", "actions",
         )
 
     def __init__(self, *args, **kwargs):
@@ -368,20 +380,20 @@ class SupportCoverageTable(NetBoxTable):
     module = tables.Column(verbose_name=_("Module"), linkify=True)
     contract_type = columns.ChoiceFieldColumn(verbose_name=_("Contract Type"), accessor="contract__contract_type")
     integrator = tables.Column(
-        verbose_name=_("Integrator Company"), accessor="effective_integrator", linkify=True, orderable=False
+        verbose_name=_("Integrator"), accessor="effective_integrator", linkify=True, orderable=False
     )
     maintenance_company = tables.Column(
         verbose_name=_("Maintenance Company"), accessor="contract__maintenance_company", linkify=True
     )
     sku = tables.Column(verbose_name=_("SKU"))
     quantity = tables.Column(verbose_name=_("Quantity"))
-    start_date = columns.DateColumn(
+    start_date = DateColumn(
         verbose_name=_("Start Date"), accessor="effective_start_date", order_by=("effective_start",)
     )
     effective_end_date = EndDateColumn(
         verbose_name=_("End Date"), accessor="effective_end_date", order_by=("effective_end",)
     )
-    end_date = columns.DateColumn(verbose_name=_("End Date Override"))
+    end_date = DateColumn(verbose_name=_("End Date Override"))
     state = StateColumn(verbose_name=pgettext_lazy("support contracts", "State"), order_by=("effective_end",))
     days_remaining = DaysRemainingColumn(verbose_name=_("Days Remaining"), order_by=("effective_end",))
     notes = tables.Column(verbose_name=_("Notes"))
@@ -391,14 +403,13 @@ class SupportCoverageTable(NetBoxTable):
         model = SupportCoverage
         fields = (
             "pk", "id", "contract", "contract_type", "manufacturer", "integrator", "maintenance_company", "device",
-            "device_serial",
-            "device_type", "site", "virtual_machine", "module", "sku", "quantity", "start_date", "effective_end_date",
-            "end_date", "state", "days_remaining", "notes", "tags", "created", "last_updated", "actions",
+            "device_serial", "device_type", "site", "virtual_machine", "module", "sku", "quantity", "start_date",
+            "effective_end_date", "end_date", "state", "days_remaining", "notes", "tags", "created", "last_updated",
+            "actions",
         )
         default_columns = (
-            "pk", "contract", "integrator", "maintenance_company", "device", "device_serial", "device_type", "site",
-            "virtual_machine", "sku",
-            "quantity", "start_date", "effective_end_date", "state", "days_remaining", "actions",
+            "pk", "contract", "contract_type", "device", "device_serial", "device_type", "site",
+            "effective_end_date", "state", "days_remaining", "actions",
         )
 
 
@@ -406,9 +417,9 @@ class HardwareLifecycleEoLTable(PrimaryModelTable):
     device_type = tables.Column(verbose_name=_("Device Type"), linkify=True)
     module_type = tables.Column(verbose_name=_("Module Type"), linkify=True)
     manufacturer = tables.Column(verbose_name=_("Manufacturer"), linkify=True, orderable=False)
-    end_of_sale = columns.DateColumn(verbose_name=_("End of Sale"))
-    end_of_maintenance = columns.DateColumn(verbose_name=_("End of Maintenance"))
-    end_of_support = columns.DateColumn(verbose_name=_("End of Support"))
+    end_of_sale = DateColumn(verbose_name=_("End of Sale"))
+    end_of_maintenance = DateColumn(verbose_name=_("End of Maintenance"))
+    end_of_support = DateColumn(verbose_name=_("End of Support"))
     state = StateColumn(verbose_name=_("Support State"), order_by=("end_of_support",))
     days_remaining = DaysRemainingColumn(verbose_name=_("Days Remaining"), order_by=("end_of_support",))
     notice_url = tables.URLColumn(verbose_name=_("Notice URL"))
@@ -437,7 +448,7 @@ class DeviceCoverageTable(NetBoxTable):
     manufacturer = tables.Column(verbose_name=_("Manufacturer"), accessor="device_type__manufacturer", linkify=True)
     device_type = tables.Column(verbose_name=_("Device Type"), linkify=True)
     part_number = tables.Column(verbose_name=_("Part Number"), accessor="device_type__part_number")
-    end_of_support = columns.DateColumn(
+    end_of_support = DateColumn(
         verbose_name=_("End of Support"), accessor="device_type__support_eol__end_of_support", orderable=False
     )
     site = tables.Column(verbose_name=_("Site"), linkify=True)
@@ -445,18 +456,20 @@ class DeviceCoverageTable(NetBoxTable):
     coverage = tables.Column(
         verbose_name=_("Coverage"),
         accessor="coverage_end_annotated",
+        attrs=NOWRAP,
         empty_values=(),
         order_by=("coverage_end_annotated",),
     )
     coverage_end = tables.Column(
         verbose_name=_("Coverage End"),
         accessor="coverage_end_annotated",
+        attrs=NOWRAP,
         empty_values=(),
         order_by=("coverage_end_annotated",),
     )
     days_remaining = tables.Column(
         verbose_name=_("Days Remaining"), accessor="coverage_end_annotated", empty_values=(),
-        order_by=("coverage_end_annotated",),
+        order_by=("coverage_end_annotated",), attrs=NOWRAP,
     )
     contracts = columns.LinkedCountColumn(
         viewname="plugins:netbox_support_contracts:supportcontract_list",

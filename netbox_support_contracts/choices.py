@@ -1,4 +1,5 @@
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from utilities.choices import ChoiceSet
 
 __all__ = ("ContractStateChoices", "ContractTypeChoices", "CoverageStatusChoices", "CurrencyChoices")
@@ -27,10 +28,11 @@ class ContractTypeChoices(ChoiceSet):
     SOFTWARE = "software"
 
     CHOICES = (
-        (WARRANTY, _("OEM Warranty"), "blue"),
-        (VENDOR_SUPPORT, _("Vendor Support / Care Pack"), "cyan"),
-        (TPM, _("Third-Party Maintenance (TPM)"), "purple"),
-        (SOFTWARE, _("Software License / Subscription"), "indigo"),
+        (WARRANTY, _("Warranty"), "blue"),
+        (VENDOR_SUPPORT, _("Vendor"), "cyan"),
+        # Context keeps the choice separate from the Maintenance Company model and column labels.
+        (TPM, pgettext_lazy("contract type", "Maintenance Company"), "purple"),
+        (SOFTWARE, _("Software / License"), "indigo"),
     )
 
 

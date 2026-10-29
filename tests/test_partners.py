@@ -242,7 +242,7 @@ class ViewTests(LifecycleFixtures, TestCase):
         self.assertEqual(row["Integrator Company"], "Example Integrator")
         self.assertEqual(row["Maintenance Company"], "Example Maintenance")
         self.assertEqual(row["Current Contract"], "TPM-2026-001")
-        self.assertEqual(row["Current Contract Type"], "Third-Party Maintenance (TPM)")
+        self.assertEqual(row["Current Contract Type"], "Maintenance Company")
 
     def test_device_report_company_filters(self):
         self.add_permissions("dcim.view_device", f"{PLUGIN}.view_supportcoverage")

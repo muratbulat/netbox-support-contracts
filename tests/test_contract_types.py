@@ -108,9 +108,8 @@ class ContractTypeModelTests(ContractFixtures, TestCase):
         self.assertIn("contract_type", contracts.Meta.default_columns)
         self.assertIn("sku_count", contracts.columns.names())
         coverage = SupportCoverageTable(SupportCoverage.objects.all())
-        self.assertIn("maintenance_company", coverage.Meta.default_columns)
-        self.assertIn("quantity", coverage.Meta.default_columns)
-        self.assertIn("contract_type", coverage.columns.names())
+        self.assertIn("contract_type", coverage.Meta.default_columns)
+        self.assertTrue({"maintenance_company", "quantity"} <= set(coverage.columns.names()))
 
 
 @override_settings(LOGIN_REQUIRED=True, EXEMPT_VIEW_PERMISSIONS=[])
@@ -124,29 +123,28 @@ class ContractTypeViewTests(ContractFixtures, TestCase):
 
     def test_contract_page_shows_type_and_sku_count(self):
         response = self.client.get(self.software.get_absolute_url())
-        self.assertContains(response, "Software License / Subscription")
+        self.assertContains(response, "Software / License")
         self.assertContains(response, "text-bg-indigo")
         self.assertContains(response, "Licenses / SKUs")
         self.assertContains(response, "?object_type=none")
 
     def test_contract_list_type_column_and_filter(self):
         response = self.client.get(url("supportcontract_list"), {"contract_type": "tpm"})
-        self.assertContains(response, "Third-Party Maintenance (TPM)")
+        self.assertContains(response, 'text-bg-purple">Maintenance Company</span>')
         self.assertContains(response, "CONT-2027-001")
         self.assertNotContains(response, "CONT-2026-003")
 
     def test_coverage_detail_shows_type_company_quantity(self):
         response = self.client.get(self.office.get_absolute_url())
-        self.assertContains(response, "Software License / Subscription")
+        self.assertContains(response, "Software / License")
         self.assertContains(response, "250")
         response = self.client.get(self.row_a.get_absolute_url())
         self.assertContains(response, "Example Maintenance A")
 
     def test_device_panel_shows_type_and_maintenance_company(self):
         response = self.client.get(self.storage_a.get_absolute_url())
-        self.assertContains(response, "Maintenance Company")
+        self.assertContains(response, 'text-bg-purple">Maintenance Company</span>')
         self.assertContains(response, "Example Maintenance A")
-        self.assertContains(response, "Third-Party Maintenance (TPM)")
 
     def test_module_panel(self):
         from . import make_module
@@ -156,7 +154,7 @@ class ContractTypeViewTests(ContractFixtures, TestCase):
         cover(self.warranty, module)
         response = self.client.get(module.get_absolute_url())
         self.assertContains(response, "Support &amp; Warranty Coverage")
-        self.assertContains(response, "OEM Warranty")
+        self.assertContains(response, 'text-bg-blue">Warranty</span>')
 
     def test_device_report_filter(self):
         response = self.client.get(
@@ -249,12 +247,10 @@ class ContractTypeAPITests(ContractFixtures, APITestCase):
 @override_settings(LOGIN_REQUIRED=True, EXEMPT_VIEW_PERMISSIONS=[])
 class ContractTypeTranslationTests(ContractFixtures, TestCase):
     STRINGS = (
-        (lambda: dict(ContractTypeChoices)["warranty"], "OEM Warranty", "Üretici Garantisi (OEM)"),
-        (lambda: dict(ContractTypeChoices)["vendor_support"], "Vendor Support / Care Pack",
-         "Üretici Destek Paketi (Care Pack)"),
-        (lambda: dict(ContractTypeChoices)["tpm"], "Third-Party Maintenance (TPM)", "3. Parti Bakım Anlaşması (TPM)"),
-        (lambda: dict(ContractTypeChoices)["software"], "Software License / Subscription",
-         "Yazılım Lisansı / Abonelik"),
+        (lambda: dict(ContractTypeChoices)["warranty"], "Warranty", "Garanti"),
+        (lambda: dict(ContractTypeChoices)["vendor_support"], "Vendor", "Üretici"),
+        (lambda: dict(ContractTypeChoices)["tpm"], "Maintenance Company", "Bakım Firması"),
+        (lambda: dict(ContractTypeChoices)["software"], "Software / License", "Yazılım / Lisans"),
         (lambda: SupportContract._meta.get_field("contract_type").verbose_name, "contract type", "sözleşme türü"),
         (lambda: SupportCoverage._meta.get_field("quantity").verbose_name, "quantity", "adet / miktar"),
         (lambda: SupportCoverage._meta.get_field("quantity").help_text,
@@ -280,4 +276,4 @@ class ContractTypeTranslationTests(ContractFixtures, TestCase):
         self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "tr"
         response = self.client.get(self.storage_a.get_absolute_url())
         self.assertContains(response, "Bakım Firması")
-        self.assertContains(response, "3. Parti Bakım Anlaşması (TPM)")
+        self.assertContains(response, 'text-bg-purple">Bakım Firması</span>')

@@ -144,7 +144,7 @@ class ProviderExportTests(ExportFixtures, TestCase):
         self.assertEqual(first["Device Status"], "Active")
         self.assertEqual(first["Coverage Status"], "Expiring")
         self.assertEqual(first["Current Contract"], "CONT-2026-001")
-        self.assertEqual(first["Current Contract Type"], "OEM Warranty")
+        self.assertEqual(first["Current Contract Type"], "Warranty")
         self.assertEqual(first["Integrator Company"], "Example Distributor")
         self.assertEqual(first["Maintenance Company"], "")
         self.assertEqual(first["Current Coverage End Date"], days(60).isoformat())
@@ -172,7 +172,7 @@ class ProviderExportTests(ExportFixtures, TestCase):
         self.assertIn("Donanım Destek Sonu (EoS)", headers)
         by_serial = {row["Seri Numarası"]: row for row in rows}
         self.assertEqual(by_serial["SN-10001"]["Kapsam Durumu"], "Süresi Yakında Dolacak")
-        self.assertEqual(by_serial["SN-10001"]["Mevcut Sözleşme Türü"], "Üretici Garantisi (OEM)")
+        self.assertEqual(by_serial["SN-10001"]["Mevcut Sözleşme Türü"], "Garanti")
         self.assertEqual(by_serial["SN-20002"]["Mevcut Kapsam Bitiş Tarihi"], "Süresiz")
 
     def test_csv_delimiter_preference(self):
