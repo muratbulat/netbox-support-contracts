@@ -14,18 +14,27 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
 
 ## Features
 
-- **Support contracts**: manufacturer, contract number (unique per manufacturer, case-insensitive), contract type
-  (OEM warranty, vendor support / care pack, third-party maintenance, or software license / subscription), service
-  level, term, reseller or provider, vendor portal link, renewal notes, tenant, and commercial cost.
+- **Support contracts**: manufacturer (NetBox's own), contract number, contract type (OEM warranty, vendor support /
+  care pack, third-party maintenance, or software license / subscription), service level, term, integrator company,
+  maintenance company, vendor portal link, renewal notes, tenant, and commercial cost. Third-party maintenance
+  contracts can cover several vendors' hardware, so they may name only a maintenance company. Contract numbers are
+  unique (ignoring case) per manufacturer, or per maintenance company when there is no manufacturer.
+- **Partner companies**: *Integrator Companies* (the sellers or system integrators the hardware or support was
+  bought through) and *Maintenance Companies* (third-party maintenance providers, for support and spare parts after
+  OEM warranty). Each has contact details and its own pages, and shows its contracts and covered devices.
 - **Live state, never stale**: *Active*, *Expiring*, and *Expired* states and the days remaining are computed from the
   end date whenever they're read; nothing is stored. A blank end date means open-ended, and the end date is the last
   covered day.
-- **Coverage**: link a contract to existing devices, VMs, or modules. Optionally set an end date for a single item
-  (the contract's end date applies otherwise), a SKU or license part number, and a quantity (seats, sockets, or
+- **Coverage**: link a contract to existing devices, VMs, or modules. Optionally set a start date, end date, or
+  integrator for a single item (the contract's values apply otherwise), which is useful when one OEM warranty
+  contract groups devices bought in different batches. You can also set a SKU or license part number, and a quantity (seats, sockets, or
   units). A row with only a SKU records a contract-level license that isn't tied to one object, such as 250 office
   suite licenses. The contract page counts these under *Licenses / SKUs*.
-- **Changing providers**: filter coverage by reseller or contract type, select the rows, and use **Edit Selected**
-  to move them to the new provider's contract in one step. If any moved row would duplicate existing coverage, the
+- **Full support history**: a device keeps its expired OEM warranty (with the integrator it was bought through)
+  alongside its current third-party maintenance contract. The overall coverage status follows the coverage that runs
+  longest.
+- **Changing providers**: filter coverage by maintenance company, integrator, or contract type, select the rows, and
+  use **Edit Selected** to move them to the new provider's contract in one step. If any moved row would duplicate existing coverage, the
   whole batch is rolled back.
 - **Bulk coverage workflow**: on a contract, choose **Add Devices / Serials** and:
   - **Option A**: pick devices, VMs, or modules, or cover every device matching a site / device type / role filter.
@@ -33,14 +42,16 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
     runs in one query and ignores case. Devices already covered are skipped. A serial number shared by more than one
     device is reported as *ambiguous* and never guessed. Any serial numbers that are unmatched or ambiguous are put
     back into the form so you can fix them.
-  - **Remove Selected** on the *Covered Devices & Objects* tab removes coverage in bulk.
+  - **Delete Selected** on the *Covered Devices & Objects* tab removes coverage in bulk.
 - **Columns on NetBox's own lists**: under *Configure Table*, the Devices, Virtual Machines, and Modules lists
-  offer *Support Coverage*, *Support End Date*, *Support Days Remaining*, and *Support Reseller*. Device Types and
+  offer *Support Coverage*, *Support End Date*, *Support Days Remaining*, *Integrator Company* (from the full
+  coverage history), and *Maintenance Company* (from contracts that are still covering). Device Types and
   Module Types offer *End of Support*. These columns show "—" to users without view permission on coverage
   (or on lifecycle records, for *End of Support*).
 - **Device, VM, and module panel**: a *Support & Warranty Coverage* card showing the overall coverage badge (Covered,
   Expiring, Expired, or Not covered), the effective end date and days remaining, the covering contracts with their
-  type and reseller, and an **Assign Contract** button.
+  type, manufacturer, integrator, and maintenance company (expired ones included), and an **Assign Contract**
+  button.
 - **Hardware lifecycle**: End-of-Sale, End-of-Maintenance, and End-of-Support dates per device type or module type,
   shown on the type's page. Device panels flag conflicts:
   - *End-of-life hardware under active support contract*
@@ -51,7 +62,7 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
   devices whose OEM warranty ends within 90 days, or devices whose coverage ends between two dates. Then choose
   **Export for Support Provider (CSV)**. You get one row per device with manufacturer, model, part number, units per
   model, serial number, asset tag, site, rack, role, device status, the coverage currently in force (contract, type,
-  reseller, end date, days remaining), and the hardware End of Support date. A contract's *Covered Devices &
+  end date, days remaining), the integrator and maintenance companies, and the hardware End of Support date. A contract's *Covered Devices &
   Objects* tab has the same button. Headers follow the user's language, and the CSV delimiter follows the user's
   NetBox CSV preference.
 - **Dashboard widget**: *Support Coverage Summary* shows Covered, Expiring, Expired, and Not Covered device counts,
@@ -88,6 +99,13 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
    ```
 
 The daily expiry job is scheduled automatically by NetBox's RQ worker (`netbox-rq`).
+
+### Upgrading from versions with a free-text reseller
+
+Migration `0003` replaces the contract's free-text *reseller* field with the two partner company models.
+`manage.py migrate` keeps your data: a third-party maintenance (`tpm`) contract's reseller becomes a *Maintenance
+Company*, and any other contract's reseller becomes an *Integrator Company*. Names that differ only in case are
+merged into one company.
 
 ## Configuration
 
@@ -135,6 +153,8 @@ Base path: `/api/plugins/support-contracts/`
 | `coverage/bulk-add/` | `POST`: cover objects by ID and/or serial number. |
 | `coverage/bulk-remove/` | `POST`: remove coverage by coverage ID or covered-object ID. |
 | `lifecycle/` | Hardware lifecycle (EoL) records. |
+| `integrators/` | Integrator companies, with `contract_count` and `device_count`. |
+| `maintenance-companies/` | Maintenance companies, with `contract_count` and `device_count`. |
 
 Bulk add example:
 

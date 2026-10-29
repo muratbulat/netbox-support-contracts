@@ -9,14 +9,45 @@ from strawberry.types import Info
 
 from .. import models
 from ..services import may_view_cost
-from .filters import HardwareLifecycleEoLFilter, SupportContractFilter, SupportCoverageFilter
+from .filters import (
+    HardwareLifecycleEoLFilter,
+    IntegratorFilter,
+    MaintenanceCompanyFilter,
+    SupportContractFilter,
+    SupportCoverageFilter,
+)
 
 if TYPE_CHECKING:
     from dcim.graphql.types import DeviceType, DeviceTypeType, ManufacturerType, ModuleType, ModuleTypeType
     from tenancy.graphql.types import TenantType
     from virtualization.graphql.types import VirtualMachineType
 
-__all__ = ("HardwareLifecycleEoLType", "SupportContractType", "SupportCoverageType")
+# Lazy references to this module (types/filters that refer to each other).
+PLUGIN_TYPES = "netbox_support_contracts.graphql.types"
+
+__all__ = (
+    "HardwareLifecycleEoLType",
+    "IntegratorType",
+    "MaintenanceCompanyType",
+    "SupportContractType",
+    "SupportCoverageType",
+)
+
+
+@strawberry_django.type(models.Integrator, fields="__all__", filters=IntegratorFilter, pagination=True)
+class IntegratorType(PrimaryObjectType):
+    support_contracts: list[
+        Annotated["SupportContractType", strawberry.lazy(PLUGIN_TYPES)]
+    ]
+
+
+@strawberry_django.type(
+    models.MaintenanceCompany, fields="__all__", filters=MaintenanceCompanyFilter, pagination=True
+)
+class MaintenanceCompanyType(PrimaryObjectType):
+    support_contracts: list[
+        Annotated["SupportContractType", strawberry.lazy(PLUGIN_TYPES)]
+    ]
 
 
 @strawberry_django.type(
@@ -26,9 +57,11 @@ __all__ = ("HardwareLifecycleEoLType", "SupportContractType", "SupportCoverageTy
     pagination=True,
 )
 class SupportContractType(PrimaryObjectType):
-    manufacturer: Annotated["ManufacturerType", strawberry.lazy("dcim.graphql.types")]
+    manufacturer: Annotated["ManufacturerType", strawberry.lazy("dcim.graphql.types")] | None
+    integrator: Annotated["IntegratorType", strawberry.lazy(PLUGIN_TYPES)] | None
+    maintenance_company: Annotated["MaintenanceCompanyType", strawberry.lazy(PLUGIN_TYPES)] | None
     tenant: Annotated["TenantType", strawberry.lazy("tenancy.graphql.types")] | None
-    coverage: list[Annotated["SupportCoverageType", strawberry.lazy("netbox_support_contracts.graphql.types")]]
+    coverage: list[Annotated["SupportCoverageType", strawberry.lazy(PLUGIN_TYPES)]]
 
     @strawberry_django.field
     def state(self) -> str:
@@ -55,10 +88,11 @@ class SupportContractType(PrimaryObjectType):
     pagination=True,
 )
 class SupportCoverageType(NetBoxObjectType):
-    contract: Annotated["SupportContractType", strawberry.lazy("netbox_support_contracts.graphql.types")]
+    contract: Annotated["SupportContractType", strawberry.lazy(PLUGIN_TYPES)]
     device: Annotated["DeviceType", strawberry.lazy("dcim.graphql.types")] | None
     virtual_machine: Annotated["VirtualMachineType", strawberry.lazy("virtualization.graphql.types")] | None
     module: Annotated["ModuleType", strawberry.lazy("dcim.graphql.types")] | None
+    integrator: Annotated["IntegratorType", strawberry.lazy(PLUGIN_TYPES)] | None
 
     @strawberry_django.field(only=["end_date", "contract__end_date"])
     def effective_end_date(self) -> date | None:

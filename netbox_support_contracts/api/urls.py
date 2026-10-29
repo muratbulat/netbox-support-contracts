@@ -8,5 +8,7 @@ router = NetBoxRouter()
 router.register("contracts", views.SupportContractViewSet)
 router.register("coverage", views.SupportCoverageViewSet)
 router.register("lifecycle", views.HardwareLifecycleEoLViewSet)
+router.register("integrators", views.IntegratorViewSet)
+router.register("maintenance-companies", views.MaintenanceCompanyViewSet)
 
 urlpatterns = router.urls

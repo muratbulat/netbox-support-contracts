@@ -23,6 +23,7 @@ from utilities.forms.fields import (
     CSVModelChoiceField,
     DynamicModelChoiceField,
     DynamicModelMultipleChoiceField,
+    SlugField,
     TagFilterField,
 )
 from utilities.forms.rendering import FieldSet
@@ -30,7 +31,7 @@ from utilities.forms.widgets import DatePicker
 from virtualization.models import VirtualMachine
 
 from .choices import ContractStateChoices, ContractTypeChoices, CurrencyChoices
-from .models import HardwareLifecycleEoL, SupportContract, SupportCoverage
+from .models import HardwareLifecycleEoL, Integrator, MaintenanceCompany, SupportContract, SupportCoverage
 from .services import MAX_BULK_ITEMS, may_view_cost, parse_serials
 
 __all__ = (
@@ -40,6 +41,14 @@ __all__ = (
     "HardwareLifecycleEoLFilterForm",
     "HardwareLifecycleEoLForm",
     "HardwareLifecycleEoLImportForm",
+    "IntegratorBulkEditForm",
+    "IntegratorFilterForm",
+    "IntegratorForm",
+    "IntegratorImportForm",
+    "MaintenanceCompanyBulkEditForm",
+    "MaintenanceCompanyFilterForm",
+    "MaintenanceCompanyForm",
+    "MaintenanceCompanyImportForm",
     "SupportContractBulkEditForm",
     "SupportContractFilterForm",
     "SupportContractForm",
@@ -87,7 +96,15 @@ def scope_csv_queryset(form, field_name, lookup, value_key):
 
 class SupportContractForm(CostPermissionMixin, TenancyForm, PrimaryModelForm):
     manufacturer = DynamicModelChoiceField(
-        label=_("Manufacturer"), queryset=Manufacturer.objects.all(), selector=True, quick_add=True
+        label=_("Manufacturer"), queryset=Manufacturer.objects.all(), required=False, selector=True, quick_add=True
+    )
+    integrator = DynamicModelChoiceField(
+        label=_("Integrator company"), queryset=Integrator.objects.all(), required=False, selector=True,
+        quick_add=True,
+    )
+    maintenance_company = DynamicModelChoiceField(
+        label=_("Maintenance company"), queryset=MaintenanceCompany.objects.all(), required=False, selector=True,
+        quick_add=True,
     )
     currency = forms.CharField(label=_("Currency"), max_length=3, required=False, help_text=CURRENCY_HELP)
 
@@ -97,7 +114,8 @@ class SupportContractForm(CostPermissionMixin, TenancyForm, PrimaryModelForm):
             name=_("Contract"),
         ),
         FieldSet("start_date", "end_date", name=_("Term")),
-        FieldSet("reseller", "portal_url", "cost", "currency", "renewal_notes", name=_("Commercial")),
+        FieldSet("integrator", "maintenance_company", name=_("Partners & Providers")),
+        FieldSet("portal_url", "cost", "currency", "renewal_notes", name=_("Commercial")),
         FieldSet("tenant_group", "tenant", name=_("Tenancy")),
     )
 
@@ -105,8 +123,8 @@ class SupportContractForm(CostPermissionMixin, TenancyForm, PrimaryModelForm):
         model = SupportContract
         fields = (
             "manufacturer", "contract_number", "contract_type", "service_level", "start_date", "end_date",
-            "reseller", "cost", "currency", "portal_url", "renewal_notes", "tenant_group", "tenant", "description",
-            "owner", "comments", "tags",
+            "integrator", "maintenance_company", "cost", "currency", "portal_url", "renewal_notes", "tenant_group",
+            "tenant", "description", "owner", "comments", "tags",
         )
         widgets = {
             "start_date": DatePicker(),
@@ -122,8 +140,17 @@ class SupportContractImportForm(CostPermissionMixin, PrimaryModelImportForm):
     manufacturer = CSVModelChoiceField(
         label=_("Manufacturer"),
         queryset=Manufacturer.objects.all(),
+        required=False,
         to_field_name="name",
         help_text=_("Manufacturer name"),
+    )
+    integrator = CSVModelChoiceField(
+        label=_("Integrator company"), queryset=Integrator.objects.all(), required=False, to_field_name="name",
+        help_text=_("Integrator company name"),
+    )
+    maintenance_company = CSVModelChoiceField(
+        label=_("Maintenance company"), queryset=MaintenanceCompany.objects.all(), required=False,
+        to_field_name="name", help_text=_("Maintenance company name"),
     )
     contract_type = CSVChoiceField(
         label=_("Contract type"), choices=ContractTypeChoices, required=False, help_text=_("Contract type")
@@ -140,7 +167,8 @@ class SupportContractImportForm(CostPermissionMixin, PrimaryModelImportForm):
         model = SupportContract
         fields = (
             "manufacturer", "contract_number", "contract_type", "service_level", "start_date", "end_date",
-            "reseller", "cost", "currency", "portal_url", "renewal_notes", "tenant", "description", "owner",
+            "integrator", "maintenance_company", "cost", "currency", "portal_url", "renewal_notes", "tenant",
+            "description", "owner",
             "comments", "tags",
         )
 
@@ -162,7 +190,14 @@ class SupportContractBulkEditForm(CostPermissionMixin, PrimaryModelBulkEditForm)
     service_level = forms.CharField(label=_("Service level"), max_length=64, required=False)
     start_date = forms.DateField(label=_("Start date"), required=False, widget=DatePicker())
     end_date = forms.DateField(label=_("End date"), required=False, widget=DatePicker())
-    reseller = forms.CharField(label=_("Reseller"), max_length=128, required=False)
+    integrator = DynamicModelChoiceField(
+        label=_("Integrator company"), queryset=Integrator.objects.all(), required=False, selector=True,
+        quick_add=True,
+    )
+    maintenance_company = DynamicModelChoiceField(
+        label=_("Maintenance company"), queryset=MaintenanceCompany.objects.all(), required=False, selector=True,
+        quick_add=True,
+    )
     cost = forms.DecimalField(label=_("Cost"), max_digits=12, decimal_places=2, required=False)
     currency = forms.CharField(label=_("Currency"), max_length=3, required=False, help_text=CURRENCY_HELP)
     portal_url = forms.URLField(label=_("Vendor Portal URL"), max_length=500, required=False)
@@ -171,12 +206,13 @@ class SupportContractBulkEditForm(CostPermissionMixin, PrimaryModelBulkEditForm)
     fieldsets = (
         FieldSet("manufacturer", "contract_type", "service_level", "description", name=_("Contract")),
         FieldSet("start_date", "end_date", name=_("Term")),
-        FieldSet("reseller", "portal_url", "cost", "currency", name=_("Commercial")),
+        FieldSet("integrator", "maintenance_company", name=_("Partners & Providers")),
+        FieldSet("portal_url", "cost", "currency", name=_("Commercial")),
         FieldSet("tenant", name=_("Tenancy")),
     )
     nullable_fields = (
-        "service_level", "start_date", "end_date", "reseller", "cost", "portal_url", "tenant", "description",
-        "comments",
+        "manufacturer", "service_level", "start_date", "end_date", "integrator", "maintenance_company", "cost",
+        "portal_url", "tenant", "description", "comments",
     )
 
     def clean_currency(self):
@@ -188,9 +224,9 @@ class SupportContractFilterForm(PrimaryModelFilterSetForm):
     fieldsets = (
         FieldSet("q", "filter_id", "tag"),
         FieldSet(
-            "manufacturer_id", "contract_type", "state", "expiring_within_days", "service_level", "reseller",
-            name=_("Contract"),
+            "manufacturer_id", "contract_type", "state", "expiring_within_days", "service_level", name=_("Contract")
         ),
+        FieldSet("integrator_id", "maintenance_company_id", name=_("Partners & Providers")),
         FieldSet("device_id", "virtual_machine_id", name=_("Coverage")),
         FieldSet("tenant_id", name=_("Tenancy")),
         FieldSet("owner_group_id", "owner_id", name=_("Ownership")),
@@ -204,12 +240,90 @@ class SupportContractFilterForm(PrimaryModelFilterSetForm):
     state = forms.MultipleChoiceField(choices=ContractStateChoices, required=False, label=STATE)
     expiring_within_days = forms.IntegerField(min_value=0, required=False, label=_("Ends within (days)"))
     service_level = forms.CharField(required=False, label=_("Service level"))
-    reseller = forms.CharField(required=False, label=_("Reseller"))
+    integrator_id = DynamicModelMultipleChoiceField(
+        queryset=Integrator.objects.all(), required=False, label=_("Integrator company")
+    )
+    maintenance_company_id = DynamicModelMultipleChoiceField(
+        queryset=MaintenanceCompany.objects.all(), required=False, label=_("Maintenance company")
+    )
     device_id = DynamicModelMultipleChoiceField(queryset=Device.objects.all(), required=False, label=_("Device"))
     virtual_machine_id = DynamicModelMultipleChoiceField(
         queryset=VirtualMachine.objects.all(), required=False, label=_("Virtual machine")
     )
     tenant_id = DynamicModelMultipleChoiceField(queryset=Tenant.objects.all(), required=False, label=_("Tenant"))
+    tag = TagFilterField(model)
+
+
+#
+# Partner companies (integrators & maintenance companies)
+#
+
+COMPANY_FIELDS = ("name", "slug", "contact_name", "contact_email", "contact_phone", "portal_url")
+
+
+class IntegratorForm(PrimaryModelForm):
+    slug = SlugField()
+
+    fieldsets = (
+        FieldSet("name", "slug", "description", "tags", name=_("Company")),
+        FieldSet("contact_name", "contact_email", "contact_phone", "portal_url", name=_("Contact")),
+    )
+
+    class Meta:
+        model = Integrator
+        fields = (*COMPANY_FIELDS, "description", "owner", "comments", "tags")
+
+
+class MaintenanceCompanyForm(IntegratorForm):
+    class Meta(IntegratorForm.Meta):
+        model = MaintenanceCompany
+
+
+class IntegratorImportForm(PrimaryModelImportForm):
+    slug = SlugField()
+
+    class Meta:
+        model = Integrator
+        fields = (*COMPANY_FIELDS, "description", "owner", "comments", "tags")
+
+
+class MaintenanceCompanyImportForm(IntegratorImportForm):
+    class Meta(IntegratorImportForm.Meta):
+        model = MaintenanceCompany
+
+
+class IntegratorBulkEditForm(PrimaryModelBulkEditForm):
+    model = Integrator
+    contact_name = forms.CharField(
+        label=pgettext_lazy("support contracts", "Contact name"), max_length=128, required=False,
+    )
+    contact_email = forms.EmailField(label=pgettext_lazy("support contracts", "Contact email"), required=False)
+    contact_phone = forms.CharField(
+        label=pgettext_lazy("support contracts", "Contact phone"), max_length=64, required=False,
+    )
+    portal_url = forms.URLField(label=_("Website / Portal URL"), max_length=500, required=False)
+
+    fieldsets = (FieldSet("contact_name", "contact_email", "contact_phone", "portal_url", "description"),)
+    nullable_fields = ("contact_name", "contact_email", "contact_phone", "portal_url", "description", "comments")
+
+
+class MaintenanceCompanyBulkEditForm(IntegratorBulkEditForm):
+    model = MaintenanceCompany
+    contact_phone = forms.CharField(label=_("Support phone"), max_length=64, required=False)
+    portal_url = forms.URLField(label=_("Support portal URL"), max_length=500, required=False)
+
+
+class IntegratorFilterForm(PrimaryModelFilterSetForm):
+    model = Integrator
+    fieldsets = (
+        FieldSet("q", "filter_id", "tag"),
+        FieldSet("owner_group_id", "owner_id", name=_("Ownership")),
+    )
+    tag = TagFilterField(model)
+
+
+class MaintenanceCompanyFilterForm(IntegratorFilterForm):
+    model = MaintenanceCompany
     tag = TagFilterField(model)
 
 
@@ -231,19 +345,24 @@ class SupportCoverageForm(NetBoxModelForm):
         required=False,
         query_params={"device_id": "$device"},
     )
+    integrator = DynamicModelChoiceField(
+        label=_("Integrator company"), queryset=Integrator.objects.all(), required=False, selector=True,
+        quick_add=True,
+    )
 
     fieldsets = (
         FieldSet("contract", name=_("Contract")),
         FieldSet("device", "virtual_machine", "module", name=_("Covered object")),
-        FieldSet("sku", "quantity", "end_date", "notes", "tags", name=_("Coverage")),
+        FieldSet("sku", "quantity", "start_date", "end_date", "integrator", "notes", "tags", name=_("Coverage")),
     )
 
     class Meta:
         model = SupportCoverage
         fields = (
-            "contract", "device", "virtual_machine", "module", "end_date", "sku", "quantity", "notes", "tags",
+            "contract", "device", "virtual_machine", "module", "start_date", "end_date", "integrator", "sku",
+            "quantity", "notes", "tags",
         )
-        widgets = {"end_date": DatePicker()}
+        widgets = {"start_date": DatePicker(), "end_date": DatePicker()}
 
 
 class SupportCoverageImportForm(NetBoxModelImportForm):
@@ -268,12 +387,16 @@ class SupportCoverageImportForm(NetBoxModelImportForm):
         label=_("Module"), queryset=Module.objects.all(), required=False, to_field_name="serial",
         help_text=_("Module serial number"),
     )
+    integrator = CSVModelChoiceField(
+        label=_("Integrator company"), queryset=Integrator.objects.all(), required=False, to_field_name="name",
+        help_text=_("Integrator company name"),
+    )
 
     class Meta:
         model = SupportCoverage
         fields = (
-            "contract", "manufacturer", "device", "virtual_machine", "module", "end_date", "sku", "quantity",
-            "notes", "tags",
+            "contract", "manufacturer", "device", "virtual_machine", "module", "start_date", "end_date",
+            "integrator", "sku", "quantity", "notes", "tags",
         )
 
     def __init__(self, data=None, *args, **kwargs):
@@ -290,23 +413,29 @@ class SupportCoverageBulkEditForm(NetBoxModelBulkEditForm):
         selector=True,
         help_text=_("Move selected coverage items to another contract (e.g. when switching annual support provider)."),
     )
+    start_date = forms.DateField(label=_("Start date override"), required=False, widget=DatePicker())
     end_date = forms.DateField(label=_("End date override"), required=False, widget=DatePicker())
+    integrator = DynamicModelChoiceField(
+        label=_("Integrator company"), queryset=Integrator.objects.all(), required=False, selector=True,
+        quick_add=True,
+    )
     sku = forms.CharField(label=_("SKU / License Part Number"), max_length=100, required=False)
     quantity = forms.IntegerField(label=_("Quantity"), min_value=0, required=False)
     notes = forms.CharField(label=_("Notes"), max_length=255, required=False)
 
     fieldsets = (
         FieldSet("contract", name=_("Contract")),
-        FieldSet("end_date", "sku", "quantity", "notes", name=_("Coverage")),
+        FieldSet("start_date", "end_date", "integrator", "sku", "quantity", "notes", name=_("Coverage")),
     )
-    nullable_fields = ("end_date", "sku", "quantity", "notes")
+    nullable_fields = ("start_date", "end_date", "integrator", "sku", "quantity", "notes")
 
 
 class SupportCoverageFilterForm(NetBoxModelFilterSetForm):
     model = SupportCoverage
     fieldsets = (
         FieldSet("q", "filter_id", "tag"),
-        FieldSet("contract_id", "manufacturer_id", "contract_type", "reseller", "state", name=_("Contract")),
+        FieldSet("contract_id", "manufacturer_id", "contract_type", "state", name=_("Contract")),
+        FieldSet("integrator_id", "maintenance_company_id", name=_("Partners & Providers")),
         FieldSet("object_type", "device_id", "virtual_machine_id", "module_id", "site_id", name=_("Covered object")),
     )
     contract_id = DynamicModelMultipleChoiceField(
@@ -315,7 +444,12 @@ class SupportCoverageFilterForm(NetBoxModelFilterSetForm):
     contract_type = forms.MultipleChoiceField(
         choices=ContractTypeChoices, required=False, label=_("Contract type")
     )
-    reseller = forms.CharField(required=False, label=_("Reseller"))
+    integrator_id = DynamicModelMultipleChoiceField(
+        queryset=Integrator.objects.all(), required=False, label=_("Integrator company")
+    )
+    maintenance_company_id = DynamicModelMultipleChoiceField(
+        queryset=MaintenanceCompany.objects.all(), required=False, label=_("Maintenance company")
+    )
     manufacturer_id = DynamicModelMultipleChoiceField(
         queryset=Manufacturer.objects.all(), required=False, label=_("Manufacturer")
     )
@@ -439,7 +573,7 @@ class DeviceCoverageFilterForm(forms.Form):
         FieldSet(
             "expiring_within_days", "coverage_end_after", "coverage_end_before", name=_("Coverage end window")
         ),
-        FieldSet("contract_id", "contract_type", "reseller", name=_("Contract")),
+        FieldSet("contract_id", "contract_type", "integrator_id", "maintenance_company_id", name=_("Contract")),
         FieldSet("status", "manufacturer_id", "device_type_id", "site_id", "role_id", name=_("Device")),
     )
     q = forms.CharField(required=False, label=_("Search"))
@@ -455,7 +589,12 @@ class DeviceCoverageFilterForm(forms.Form):
     contract_type = forms.MultipleChoiceField(
         choices=ContractTypeChoices, required=False, label=_("Contract type")
     )
-    reseller = forms.CharField(required=False, label=_("Reseller"))
+    integrator_id = DynamicModelMultipleChoiceField(
+        queryset=Integrator.objects.all(), required=False, label=_("Integrator company")
+    )
+    maintenance_company_id = DynamicModelMultipleChoiceField(
+        queryset=MaintenanceCompany.objects.all(), required=False, label=_("Maintenance company")
+    )
     coverage = forms.MultipleChoiceField(
         choices=(
             ("covered", _("Covered")),
@@ -513,9 +652,17 @@ class BulkCoverageAddForm(forms.Form):
         label=_("Quantity"), min_value=0, required=False,
         help_text=_("License count, seats, sockets, or covered units (optional)."),
     )
+    start_date = forms.DateField(
+        label=_("Start date override"), required=False, widget=DatePicker(),
+        help_text=_("Leave blank to follow the contract start date"),
+    )
     end_date = forms.DateField(
         label=_("End date override"), required=False, widget=DatePicker(),
         help_text=_("Leave blank to follow the contract end date"),
+    )
+    integrator = DynamicModelChoiceField(
+        label=_("Integrator company"), queryset=Integrator.objects.all(), required=False, selector=True,
+        quick_add=True, help_text=_("Leave blank to follow the contract integrator"),
     )
     notes = forms.CharField(label=_("Notes"), max_length=255, required=False)
 
@@ -523,7 +670,10 @@ class BulkCoverageAddForm(forms.Form):
         FieldSet("devices", "virtual_machines", "modules", name=_("Option A: Pick existing objects")),
         FieldSet("site", "device_type", "role", name=_("…or cover all matching devices")),
         FieldSet("serials", name=_("Option B: Paste serial numbers")),
-        FieldSet("sku", "quantity", "end_date", "notes", name=_("Applied to each new coverage row")),
+        FieldSet(
+            "sku", "quantity", "start_date", "end_date", "integrator", "notes",
+            name=_("Applied to each new coverage row"),
+        ),
     )
 
     FILTER_FIELDS = ("site", "device_type", "role")

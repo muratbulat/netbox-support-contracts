@@ -77,7 +77,7 @@ def process_contract_expiry(today=None, logger=None):
     today = today or timezone.localdate()
     warning_days = get_warning_days()
     announced = {ContractStateChoices.EXPIRING: 0, ContractStateChoices.EXPIRED: 0}
-    contracts = SupportContract.objects.select_related("manufacturer").order_by("pk")
+    contracts = SupportContract.objects.select_related("manufacturer", "maintenance_company").order_by("pk")
     for contract in contracts.iterator(chunk_size=500):
         state = contract_state(contract.end_date, warning_days, today)
         if state == contract.notified_state:
@@ -88,7 +88,7 @@ def process_contract_expiry(today=None, logger=None):
             notified = emit_contract_event(contract, event_type)
             announced[state] += 1
             if logger:
-                logger.info(f"{contract} ({contract.manufacturer}) is {state}; notified {notified} subscriber(s)")
+                logger.info(f"{contract} ({contract.provider}) is {state}; notified {notified} subscriber(s)")
     return announced
 
 

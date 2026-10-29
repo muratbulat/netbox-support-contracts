@@ -16,13 +16,25 @@ from netbox_support_contracts.choices import ContractTypeChoices
 from netbox_support_contracts.filtersets import DeviceCoverageFilterSet
 from netbox_support_contracts.models import HardwareLifecycleEoL
 
-from . import cover, days, make_contract, make_device, make_device_type, make_manufacturer, make_module, make_vm
+from . import (
+    cover,
+    days,
+    make_contract,
+    make_device,
+    make_device_type,
+    make_integrator,
+    make_maintenance_company,
+    make_manufacturer,
+    make_module,
+    make_vm,
+)
 
 PLUGIN = "netbox_support_contracts"
 EN_HEADERS = [
     "Manufacturer", "Device Type", "Part Number", "Model Device Count", "Device", "Serial Number", "Asset Tag", "Site",
     "Rack", "Role", "Device Status", "Coverage Status", "Current Contract", "Current Contract Type",
-    "Current Reseller", "Current Coverage End Date", "Days Remaining", "Hardware End of Support (EoS)",
+    "Integrator Company", "Maintenance Company", "Current Coverage End Date", "Days Remaining",
+    "Hardware End of Support (EoS)",
 ]
 
 
@@ -55,13 +67,14 @@ class ExportFixtures:
         Device.objects.filter(pk=cls.stor_1.pk).update(asset_tag="AT-0001")
         cls.warranty = make_contract(
             "CONT-2026-001", end_date=days(60), contract_type=ContractTypeChoices.WARRANTY,
-            reseller="Example Distributor",
+            integrator=make_integrator("Example Distributor"),
         )
         cls.tpm = make_contract(
             "CONT-2026-002", end_date=days(400), contract_type=ContractTypeChoices.TPM,
-            reseller="Example Maintenance A", manufacturer=make_manufacturer("Example TPM"),
+            maintenance_company=make_maintenance_company("Example Maintenance A"),
+            manufacturer=make_manufacturer("Example TPM"),
         )
-        cls.open = make_contract("CONT-2026-003", end_date=None, reseller="Example Partner")
+        cls.open = make_contract("CONT-2026-003", end_date=None, integrator=make_integrator("Example Partner"))
         for device in (cls.stor_1, cls.stor_2, cls.stor_3):
             cover(cls.warranty, device)
         cover(cls.tpm, cls.server)
@@ -96,9 +109,12 @@ class DeviceCoverageFilterTests(ExportFixtures, TestCase):
         names = self.names(status=["active"], contract_type=["warranty"], expiring_within_days=90)
         self.assertEqual(names, ["Storage-01", "Storage-02"])
 
-    def test_contract_reseller_and_type(self):
+    def test_contract_partner_companies_and_type(self):
         self.assertEqual(self.names(contract_id=[self.tpm.pk]), ["Server-01"])
-        self.assertEqual(self.names(reseller="maintenance a"), ["Server-01"])
+        self.assertEqual(self.names(maintenance_company_id=[self.tpm.maintenance_company.pk]), ["Server-01"])
+        self.assertEqual(
+            self.names(integrator_id=[self.warranty.integrator.pk]), ["Storage-01", "Storage-02", "Storage-03"]
+        )
         self.assertEqual(self.names(contract_type=["warranty"]), ["Storage-01", "Storage-02", "Storage-03"])
 
 
@@ -129,7 +145,8 @@ class ProviderExportTests(ExportFixtures, TestCase):
         self.assertEqual(first["Coverage Status"], "Expiring")
         self.assertEqual(first["Current Contract"], "CONT-2026-001")
         self.assertEqual(first["Current Contract Type"], "OEM Warranty")
-        self.assertEqual(first["Current Reseller"], "Example Distributor")
+        self.assertEqual(first["Integrator Company"], "Example Distributor")
+        self.assertEqual(first["Maintenance Company"], "")
         self.assertEqual(first["Current Coverage End Date"], days(60).isoformat())
         self.assertEqual(first["Days Remaining"], "60")
         self.assertEqual(first["Hardware End of Support (EoS)"], days(180).isoformat())
@@ -223,7 +240,10 @@ class ProviderExportTests(ExportFixtures, TestCase):
 class CoreColumnRenderingTests(ExportFixtures, TestCase):
     """Columns registered on VirtualMachineTable, ModuleTable and ModuleTypeTable render and export."""
 
-    COLUMNS = ("support_coverage_status", "support_end_date", "support_days_remaining", "support_reseller")
+    COLUMNS = (
+        "support_coverage_status", "support_end_date", "support_days_remaining", "support_integrator",
+        "support_maintenance_company",
+    )
 
     def render(self, table_class, queryset, columns):
         request = RequestFactory().get("/")
@@ -241,7 +261,7 @@ class CoreColumnRenderingTests(ExportFixtures, TestCase):
         self.assertIn("Covered", cells["support_coverage_status"][0])
         self.assertEqual(cells["support_end_date"], (days(400).isoformat(), days(400).isoformat()))
         self.assertEqual(cells["support_days_remaining"][1], 400)
-        self.assertEqual(cells["support_reseller"], ("Example Maintenance A", "Example Maintenance A"))
+        self.assertEqual(cells["support_maintenance_company"], ("Example Maintenance A", "Example Maintenance A"))
 
     def test_module_table(self):
         module = make_module(self.server, serial="MOD-10001")

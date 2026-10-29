@@ -27,6 +27,7 @@ __all__ = (
     "OPEN_ENDED",
     "VIEW_COST_PERMISSION",
     "BulkAddResult",
+    "annotate_companies",
     "annotate_contracts",
     "annotate_coverage",
     "annotate_devices",
@@ -39,6 +40,9 @@ __all__ = (
     "coverage_summary",
     "days_until",
     "days_label",
+    "effective_integrator_q",
+    "integrator_names",
+    "maintenance_company_names",
     "expiry_horizon",
     "get_warning_days",
     "lifecycle_flags",
@@ -221,8 +225,49 @@ def annotate_contracts(qs):
 
 
 def annotate_coverage(qs):
-    """Annotate a SupportCoverage queryset with effective_end (row override, else contract end; None = open-ended)."""
-    return qs.annotate(effective_end=Coalesce("end_date", "contract__end_date"))
+    """
+    Annotate a SupportCoverage queryset with effective_start / effective_end (row override, else the contract's
+    dates; a None end = open-ended).
+    """
+    return qs.annotate(
+        effective_start=Coalesce("start_date", "contract__start_date"),
+        effective_end=Coalesce("end_date", "contract__end_date"),
+    )
+
+
+class DistinctDeviceCount(Subquery):
+    """Number of distinct devices in a correlated SupportCoverage subquery (selecting device_id)."""
+
+    template = "(SELECT COUNT(DISTINCT _rows.device_id) FROM (%(subquery)s) _rows)"
+    output_field = IntegerField()
+
+
+def effective_integrator_q(integrators, prefix=""):
+    """Coverage rows whose effective integrator (row override, else the contract's) is in `integrators`."""
+    return Q(**{f"{prefix}integrator__in": integrators}) | Q(
+        **{f"{prefix}integrator__isnull": True, f"{prefix}contract__integrator__in": integrators}
+    )
+
+
+def annotate_companies(qs):
+    """Annotate an Integrator or MaintenanceCompany queryset with contract_count and (covered) device_count."""
+    from utilities.query import count_related
+
+    from .models import Integrator, SupportContract, SupportCoverage
+
+    rows = SupportCoverage.objects.filter(device__isnull=False)
+    if qs.model is Integrator:
+        field = "integrator"
+        rows = rows.filter(
+            Q(integrator=OuterRef("pk")) | Q(integrator__isnull=True, contract__integrator=OuterRef("pk"))
+        )
+    else:
+        field = "maintenance_company"
+        rows = rows.filter(contract__maintenance_company=OuterRef("pk"))
+    return qs.annotate(
+        contract_count=count_related(SupportContract, field),
+        device_count=DistinctDeviceCount(rows.order_by().values("device_id")),
+    )
 
 
 def annotate_devices(qs):
@@ -301,7 +346,9 @@ def object_coverage(obj, user=None, today=None, warning_days=None):
     today = _today(today)
     warning_days = get_warning_days() if warning_days is None else warning_days
     field = _coverage_field(type(obj))
-    rows = SupportCoverage.objects.filter(**{field: obj}).select_related("contract__manufacturer")
+    rows = SupportCoverage.objects.filter(**{field: obj}).select_related(
+        "contract__manufacturer", "contract__integrator", "contract__maintenance_company", "integrator"
+    )
     if user is not None:
         rows = rows.restrict(user, "view")
     rows = sorted(rows, key=lambda r: r.effective_end_date or OPEN_ENDED, reverse=True)
@@ -332,7 +379,7 @@ def coverage_summary(user=None, today=None, warning_days=None, limit=8):
     today = _today(today)
     warning_days = get_warning_days() if warning_days is None else warning_days
     devices = Device.objects.all()
-    contracts = SupportContract.objects.select_related("manufacturer")
+    contracts = SupportContract.objects.select_related("manufacturer", "maintenance_company")
     if user is not None:
         devices = devices.restrict(user, "view")
         contracts = contracts.restrict(user, "view")
@@ -431,7 +478,9 @@ def bulk_add_coverage(
     serials=(),
     sku="",
     quantity=None,
+    start_date=None,
     end_date=None,
+    integrator=None,
     notes="",
 ):
     """
@@ -476,7 +525,8 @@ def bulk_add_coverage(
                     result.existing.append(obj)
                     continue
                 coverage = SupportCoverage(
-                    contract=contract, sku=sku, quantity=quantity, end_date=end_date, notes=notes
+                    contract=contract, sku=sku, quantity=quantity, start_date=start_date, end_date=end_date,
+                    integrator=integrator, notes=notes,
                 )
                 setattr(coverage, field_name, obj)
                 coverage.full_clean()
@@ -515,6 +565,35 @@ def bulk_remove_coverage(contract, *, user, coverage_ids=(), device_ids=(), virt
 
 
 #
+# Partner companies of an object's coverage
+#
+
+def _distinct_names(objects):
+    names = []
+    for obj in objects:
+        if obj is not None and obj.name not in names:
+            names.append(obj.name)
+    return ", ".join(names)
+
+
+def integrator_names(rows):
+    """
+    Integrators the object was bought through, across all coverage rows: purchase history stays relevant after the
+    OEM warranty has expired.
+    """
+    return _distinct_names(row.effective_integrator for row in rows)
+
+
+def maintenance_company_names(rows, today=None):
+    """Maintenance companies of the contracts still covering the object (expired contracts no longer do)."""
+    return _distinct_names(
+        row.contract.maintenance_company
+        for row in rows
+        if contract_state(row.effective_end_date, today=today) != ContractStateChoices.EXPIRED
+    )
+
+
+#
 # Support provider / RFQ export
 #
 
@@ -535,7 +614,8 @@ def provider_export_headers():
         pgettext("provider export", "Coverage Status"),
         pgettext("provider export", "Current Contract"),
         pgettext("provider export", "Current Contract Type"),
-        pgettext("provider export", "Current Reseller"),
+        pgettext("provider export", "Integrator Company"),
+        pgettext("provider export", "Maintenance Company"),
         pgettext("provider export", "Current Coverage End Date"),
         pgettext("provider export", "Days Remaining"),
         pgettext("provider export", "Hardware End of Support (EoS)"),
@@ -558,7 +638,9 @@ def provider_export_rows(device_qs, user, today=None):
     from .models import SupportCoverage
 
     today = _today(today)
-    coverage = SupportCoverage.objects.select_related("contract")
+    coverage = SupportCoverage.objects.select_related(
+        "contract__integrator", "contract__maintenance_company", "integrator"
+    )
     coverage = coverage.restrict(user, "view") if user.has_perm(f"{PLUGIN}.view_supportcoverage") else coverage.none()
     show_eol = user.has_perm(f"{PLUGIN}.view_hardwarelifecycleeol")
     devices = list(
@@ -602,7 +684,8 @@ def provider_export_rows(device_qs, user, today=None):
             coverage_labels[coverage_status(latest, today=today)],
             current.contract.contract_number if current else "",
             type_labels[current.contract.contract_type] if current else "",
-            current.contract.reseller if current else "",
+            integrator_names(device.support_coverage.all()),
+            maintenance_company_names(device.support_coverage.all(), today),
             end_date,
             days_until(latest, today) if latest not in (None, OPEN_ENDED) else "",
             eos.isoformat() if eos else "",

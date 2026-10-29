@@ -14,8 +14,8 @@ from utilities.exceptions import PermissionsViolation
 from virtualization.models import VirtualMachine
 
 from .. import filtersets
-from ..models import HardwareLifecycleEoL, SupportContract, SupportCoverage
-from ..services import annotate_contracts, bulk_add_coverage, bulk_remove_coverage, coverage_summary
+from ..models import HardwareLifecycleEoL, Integrator, MaintenanceCompany, SupportContract, SupportCoverage
+from ..services import annotate_companies, annotate_contracts, bulk_add_coverage, bulk_remove_coverage, coverage_summary
 from . import serializers
 
 
@@ -62,7 +62,8 @@ class SupportContractViewSet(NetBoxModelViewSet):
             "soonest_contracts": [
                 {
                     **serializers.SupportContractSerializer(contract, nested=True, context=context).data,
-                    "manufacturer": str(contract.manufacturer),
+                    "manufacturer": str(contract.manufacturer or ""),
+                    "maintenance_company": str(contract.maintenance_company or ""),
                     "state": contract.state,
                     "days_remaining": contract.days_remaining,
                     "device_count": contract.device_count,
@@ -97,6 +98,11 @@ class SupportCoverageViewSet(NetBoxModelViewSet):
                 serials=data["serials"],
                 sku=data["sku"],
                 quantity=data["quantity"],
+                start_date=data["start_date"],
+                integrator=(
+                    resolve_ids(request, Integrator, [data["integrator_id"]], "integrator_id")[0]
+                    if data["integrator_id"] else None
+                ),
                 end_date=data["end_date"],
                 notes=data["notes"],
             )
@@ -150,3 +156,15 @@ class HardwareLifecycleEoLViewSet(NetBoxModelViewSet):
     queryset = HardwareLifecycleEoL.objects.all()
     serializer_class = serializers.HardwareLifecycleEoLSerializer
     filterset_class = filtersets.HardwareLifecycleEoLFilterSet
+
+
+class IntegratorViewSet(NetBoxModelViewSet):
+    queryset = annotate_companies(Integrator.objects.all())
+    serializer_class = serializers.IntegratorSerializer
+    filterset_class = filtersets.IntegratorFilterSet
+
+
+class MaintenanceCompanyViewSet(NetBoxModelViewSet):
+    queryset = annotate_companies(MaintenanceCompany.objects.all())
+    serializer_class = serializers.MaintenanceCompanySerializer
+    filterset_class = filtersets.MaintenanceCompanyFilterSet

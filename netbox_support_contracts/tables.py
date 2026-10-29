@@ -8,7 +8,7 @@ from netbox.context import current_request
 from netbox.tables import NetBoxTable, PrimaryModelTable, columns
 
 from .choices import ContractStateChoices, CoverageStatusChoices
-from .models import HardwareLifecycleEoL, SupportContract, SupportCoverage
+from .models import HardwareLifecycleEoL, Integrator, MaintenanceCompany, SupportContract, SupportCoverage
 from .services import (
     OPEN_ENDED,
     contract_state,
@@ -16,12 +16,16 @@ from .services import (
     days_label,
     days_until,
     get_warning_days,
+    integrator_names,
+    maintenance_company_names,
     may_view_cost,
 )
 
 __all__ = (
     "DeviceCoverageTable",
     "HardwareLifecycleEoLTable",
+    "IntegratorTable",
+    "MaintenanceCompanyTable",
     "SupportContractTable",
     "SupportCoverageTable",
     "coverage_badge",
@@ -29,6 +33,9 @@ __all__ = (
     "register_core_columns",
     "state_badge",
 )
+
+
+DEVICES = pgettext_lazy("support contracts", "Devices")
 
 
 #
@@ -103,13 +110,191 @@ class EndDateColumn(columns.DateColumn):
 
 
 #
+# Columns on NetBox's core tables (Devices, Virtual Machines, Modules, Device/Module Types)
+#
+
+def _request_user_may(permission):
+    request = current_request.get()
+    user = getattr(request, "user", None)
+    return bool(user is not None and user.has_perm(f"netbox_support_contracts.{permission}"))
+
+
+def _coverage_rows(record):
+    """The record's prefetched coverage rows, or None when the user may not view coverage."""
+    if not _request_user_may("view_supportcoverage"):
+        return None
+    return list(record.support_coverage.all())
+
+
+def _latest_end(rows):
+    """Latest effective end date across coverage rows: None = not covered, OPEN_ENDED = open-ended."""
+    if not rows:
+        return None
+    return max(row.end_date or row.contract.end_date or OPEN_ENDED for row in rows)
+
+
+class CoreCoverageColumn(tables.Column):
+    """Base for columns added to core tables; NetBoxTable prefetches accessor_path when the column is enabled."""
+
+    empty_values = ()
+    accessor_path = "support_coverage__contract"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, accessor=tables.A(self.accessor_path), orderable=False, **kwargs)
+
+    def render(self, record):
+        rows = _coverage_rows(record)
+        return "—" if rows is None else self.render_rows(rows)
+
+    def value(self, record):
+        rows = _coverage_rows(record)
+        return "" if rows is None else self.value_rows(rows)
+
+
+class SupportCoverageStatusColumn(CoreCoverageColumn):
+    def render_rows(self, rows):
+        return coverage_badge(coverage_status(_latest_end(rows)))
+
+    def value_rows(self, rows):
+        return str(dict(CoverageStatusChoices)[coverage_status(_latest_end(rows))])
+
+
+class SupportEndDateColumn(CoreCoverageColumn):
+    def render_rows(self, rows):
+        latest = _latest_end(rows)
+        if latest is None:
+            return "—"
+        return _("Open-ended") if latest == OPEN_ENDED else latest.isoformat()
+
+    def value_rows(self, rows):
+        latest = _latest_end(rows)
+        return "" if latest in (None, OPEN_ENDED) else latest.isoformat()
+
+
+class SupportDaysRemainingColumn(CoreCoverageColumn):
+    def render_rows(self, rows):
+        latest = _latest_end(rows)
+        if latest is None:
+            return "—"
+        return days_badge(None if latest == OPEN_ENDED else days_until(latest))
+
+    def value_rows(self, rows):
+        latest = _latest_end(rows)
+        return "" if latest in (None, OPEN_ENDED) else days_until(latest)
+
+
+class SupportIntegratorColumn(CoreCoverageColumn):
+    """Integrators the object was bought through (all coverage rows, expired OEM warranties included)."""
+
+    accessor_path = "support_coverage__contract__integrator"
+
+    def render_rows(self, rows):
+        return integrator_names(rows) or "—"
+
+    def value_rows(self, rows):
+        return integrator_names(rows)
+
+
+class SupportMaintenanceCompanyColumn(CoreCoverageColumn):
+    """Maintenance companies of the contracts still covering the object."""
+
+    accessor_path = "support_coverage__contract__maintenance_company"
+
+    def render_rows(self, rows):
+        return maintenance_company_names(rows) or "—"
+
+    def value_rows(self, rows):
+        return maintenance_company_names(rows)
+
+
+class EndOfSupportColumn(tables.Column):
+    """End of Support date and support state of a device/module type's lifecycle record."""
+
+    empty_values = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, accessor=tables.A("support_eol"), orderable=False, **kwargs)
+
+    @staticmethod
+    def end_of_support(record):
+        if not _request_user_may("view_hardwarelifecycleeol"):
+            return None
+        try:
+            return record.support_eol.end_of_support
+        except ObjectDoesNotExist:
+            return None
+
+    def render(self, record):
+        eos = self.end_of_support(record)
+        if eos is None:
+            return "—"
+        return format_html("{} {}", eos.isoformat(), state_badge(contract_state(eos)))
+
+    def value(self, record):
+        eos = self.end_of_support(record)
+        return eos.isoformat() if eos else ""
+
+
+#
 # Tables
 #
+
+class IntegratorTable(PrimaryModelTable):
+    """Expects a queryset annotated by services.annotate_companies()."""
+
+    name = tables.Column(verbose_name=_("Name"), linkify=True)
+    contact_email = tables.EmailColumn(verbose_name=pgettext_lazy("support contracts", "Contact Email"))
+    portal_url = tables.URLColumn(verbose_name=_("Website / Portal URL"))
+    contract_count = columns.LinkedCountColumn(
+        viewname="plugins:netbox_support_contracts:supportcontract_list",
+        url_params={"integrator_id": "pk"},
+        verbose_name=_("Contracts"),
+    )
+    device_count = columns.LinkedCountColumn(
+        viewname="plugins:netbox_support_contracts:device_coverage",
+        url_params={"integrator_id": "pk"},
+        verbose_name=DEVICES,
+    )
+    tags = columns.TagColumn(url_name="plugins:netbox_support_contracts:integrator_list")
+
+    class Meta(PrimaryModelTable.Meta):
+        model = Integrator
+        fields = (
+            "pk", "id", "name", "slug", "contact_name", "contact_email", "contact_phone", "portal_url",
+            "contract_count", "device_count", "description", "comments", "tags", "created", "last_updated",
+            "actions",
+        )
+        default_columns = (
+            "pk", "name", "contact_name", "contact_email", "contact_phone", "contract_count", "device_count",
+            "description",
+        )
+
+
+class MaintenanceCompanyTable(IntegratorTable):
+    contact_phone = tables.Column(verbose_name=_("Support Phone"))
+    portal_url = tables.URLColumn(verbose_name=_("Support Portal URL"))
+    contract_count = columns.LinkedCountColumn(
+        viewname="plugins:netbox_support_contracts:supportcontract_list",
+        url_params={"maintenance_company_id": "pk"},
+        verbose_name=_("Contracts"),
+    )
+    device_count = columns.LinkedCountColumn(
+        viewname="plugins:netbox_support_contracts:device_coverage",
+        url_params={"maintenance_company_id": "pk"},
+        verbose_name=DEVICES,
+    )
+    tags = columns.TagColumn(url_name="plugins:netbox_support_contracts:maintenancecompany_list")
+
+    class Meta(IntegratorTable.Meta):
+        model = MaintenanceCompany
+
 
 class SupportContractTable(PrimaryModelTable):
     contract_number = tables.Column(verbose_name=_("Contract Number"), linkify=True)
     contract_type = columns.ChoiceFieldColumn(verbose_name=_("Type"))
     manufacturer = tables.Column(verbose_name=_("Manufacturer"), linkify=True)
+    integrator = tables.Column(verbose_name=_("Integrator Company"), linkify=True)
+    maintenance_company = tables.Column(verbose_name=_("Maintenance Company"), linkify=True)
     tenant = tables.Column(verbose_name=_("Tenant"), linkify=True)
     state = StateColumn(verbose_name=pgettext_lazy("support contracts", "State"), order_by=("end_date",))
     start_date = columns.DateColumn(verbose_name=_("Start Date"))
@@ -118,7 +303,7 @@ class SupportContractTable(PrimaryModelTable):
     device_count = columns.LinkedCountColumn(
         viewname="plugins:netbox_support_contracts:supportcoverage_list",
         url_params={"contract_id": "pk"},
-        verbose_name=pgettext_lazy("support contracts", "Devices"),
+        verbose_name=DEVICES,
     )
     vm_count = columns.LinkedCountColumn(
         viewname="plugins:netbox_support_contracts:supportcoverage_list",
@@ -143,13 +328,15 @@ class SupportContractTable(PrimaryModelTable):
         model = SupportContract
         fields = (
             "pk", "id", "contract_number", "contract_type", "manufacturer", "service_level", "state", "start_date",
-            "end_date", "days_remaining", "device_count", "vm_count", "module_count", "sku_count", "reseller",
+            "end_date", "days_remaining", "device_count", "vm_count", "module_count", "sku_count", "integrator",
+            "maintenance_company",
             "cost_display", "portal_url", "tenant", "description", "comments", "tags", "created", "last_updated",
             "actions",
         )
         default_columns = (
             "pk", "contract_number", "contract_type", "manufacturer", "service_level", "state", "start_date",
-            "end_date", "days_remaining", "device_count", "reseller", "description", "actions",
+            "end_date", "days_remaining", "device_count", "integrator", "maintenance_company", "description",
+            "actions",
         )
 
     def __init__(self, *args, **kwargs):
@@ -180,10 +367,17 @@ class SupportCoverageTable(NetBoxTable):
     virtual_machine = tables.Column(verbose_name=_("Virtual Machine"), linkify=True)
     module = tables.Column(verbose_name=_("Module"), linkify=True)
     contract_type = columns.ChoiceFieldColumn(verbose_name=_("Contract Type"), accessor="contract__contract_type")
-    reseller = tables.Column(verbose_name=_("Reseller"), accessor="contract__reseller")
+    integrator = tables.Column(
+        verbose_name=_("Integrator Company"), accessor="effective_integrator", linkify=True, orderable=False
+    )
+    maintenance_company = tables.Column(
+        verbose_name=_("Maintenance Company"), accessor="contract__maintenance_company", linkify=True
+    )
     sku = tables.Column(verbose_name=_("SKU"))
     quantity = tables.Column(verbose_name=_("Quantity"))
-    start_date = columns.DateColumn(verbose_name=_("Start Date"), accessor="contract__start_date")
+    start_date = columns.DateColumn(
+        verbose_name=_("Start Date"), accessor="effective_start_date", order_by=("effective_start",)
+    )
     effective_end_date = EndDateColumn(
         verbose_name=_("End Date"), accessor="effective_end_date", order_by=("effective_end",)
     )
@@ -196,12 +390,14 @@ class SupportCoverageTable(NetBoxTable):
     class Meta(NetBoxTable.Meta):
         model = SupportCoverage
         fields = (
-            "pk", "id", "contract", "contract_type", "manufacturer", "reseller", "device", "device_serial",
+            "pk", "id", "contract", "contract_type", "manufacturer", "integrator", "maintenance_company", "device",
+            "device_serial",
             "device_type", "site", "virtual_machine", "module", "sku", "quantity", "start_date", "effective_end_date",
             "end_date", "state", "days_remaining", "notes", "tags", "created", "last_updated", "actions",
         )
         default_columns = (
-            "pk", "contract", "reseller", "device", "device_serial", "device_type", "site", "virtual_machine", "sku",
+            "pk", "contract", "integrator", "maintenance_company", "device", "device_serial", "device_type", "site",
+            "virtual_machine", "sku",
             "quantity", "start_date", "effective_end_date", "state", "days_remaining", "actions",
         )
 
@@ -268,18 +464,20 @@ class DeviceCoverageTable(NetBoxTable):
         accessor="coverage_contracts_annotated",
         verbose_name=_("Contracts"),
     )
+    integrator = SupportIntegratorColumn(verbose_name=_("Integrator Company"))
+    maintenance_company = SupportMaintenanceCompanyColumn(verbose_name=_("Maintenance Company"))
     actions = columns.ActionsColumn(actions=())
 
     class Meta(NetBoxTable.Meta):
         model = Device
         fields = (
             "pk", "id", "name", "serial", "asset_tag", "status", "manufacturer", "device_type", "part_number", "site",
-            "role", "end_of_support", "coverage", "coverage_end",
-            "days_remaining", "contracts",
+            "role", "end_of_support", "coverage", "coverage_end", "days_remaining", "integrator",
+            "maintenance_company", "contracts",
         )
         default_columns = (
             "name", "serial", "manufacturer", "device_type", "site", "coverage", "coverage_end", "days_remaining",
-            "contracts",
+            "maintenance_company", "contracts",
         )
 
     def render_coverage(self, value):
@@ -307,129 +505,12 @@ class DeviceCoverageTable(NetBoxTable):
         return None if value in (None, OPEN_ENDED) else days_until(value)
 
 
-#
-# Columns on NetBox's core tables (Devices, Virtual Machines, Modules, Device/Module Types)
-#
-
-def _request_user_may(permission):
-    request = current_request.get()
-    user = getattr(request, "user", None)
-    return bool(user is not None and user.has_perm(f"netbox_support_contracts.{permission}"))
-
-
-def _coverage_rows(record):
-    """The record's prefetched coverage rows, or None when the user may not view coverage."""
-    if not _request_user_may("view_supportcoverage"):
-        return None
-    return list(record.support_coverage.all())
-
-
-def _latest_end(rows):
-    """Latest effective end date across coverage rows: None = not covered, OPEN_ENDED = open-ended."""
-    if not rows:
-        return None
-    return max(row.end_date or row.contract.end_date or OPEN_ENDED for row in rows)
-
-
-class CoreCoverageColumn(tables.Column):
-    """Base for columns added to core tables; prefetches support_coverage__contract when enabled."""
-
-    empty_values = ()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, accessor=tables.A("support_coverage__contract"), orderable=False, **kwargs)
-
-    def render(self, record):
-        rows = _coverage_rows(record)
-        return "—" if rows is None else self.render_rows(rows)
-
-    def value(self, record):
-        rows = _coverage_rows(record)
-        return "" if rows is None else self.value_rows(rows)
-
-
-class SupportCoverageStatusColumn(CoreCoverageColumn):
-    def render_rows(self, rows):
-        return coverage_badge(coverage_status(_latest_end(rows)))
-
-    def value_rows(self, rows):
-        return str(dict(CoverageStatusChoices)[coverage_status(_latest_end(rows))])
-
-
-class SupportEndDateColumn(CoreCoverageColumn):
-    def render_rows(self, rows):
-        latest = _latest_end(rows)
-        if latest is None:
-            return "—"
-        return _("Open-ended") if latest == OPEN_ENDED else latest.isoformat()
-
-    def value_rows(self, rows):
-        latest = _latest_end(rows)
-        return "" if latest in (None, OPEN_ENDED) else latest.isoformat()
-
-
-class SupportDaysRemainingColumn(CoreCoverageColumn):
-    def render_rows(self, rows):
-        latest = _latest_end(rows)
-        if latest is None:
-            return "—"
-        return days_badge(None if latest == OPEN_ENDED else days_until(latest))
-
-    def value_rows(self, rows):
-        latest = _latest_end(rows)
-        return "" if latest in (None, OPEN_ENDED) else days_until(latest)
-
-
-class SupportResellerColumn(CoreCoverageColumn):
-    @staticmethod
-    def resellers(rows):
-        """Distinct resellers of the contracts still covering the object (not expired), in first-seen order."""
-        names = []
-        for row in rows:
-            if row.state != ContractStateChoices.EXPIRED and row.contract.reseller not in names:
-                names.append(row.contract.reseller)
-        return ", ".join(name for name in names if name)
-
-    def render_rows(self, rows):
-        return self.resellers(rows) or "—"
-
-    def value_rows(self, rows):
-        return self.resellers(rows)
-
-
-class EndOfSupportColumn(tables.Column):
-    """End of Support date and support state of a device/module type's lifecycle record."""
-
-    empty_values = ()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, accessor=tables.A("support_eol"), orderable=False, **kwargs)
-
-    @staticmethod
-    def end_of_support(record):
-        if not _request_user_may("view_hardwarelifecycleeol"):
-            return None
-        try:
-            return record.support_eol.end_of_support
-        except ObjectDoesNotExist:
-            return None
-
-    def render(self, record):
-        eos = self.end_of_support(record)
-        if eos is None:
-            return "—"
-        return format_html("{} {}", eos.isoformat(), state_badge(contract_state(eos)))
-
-    def value(self, record):
-        eos = self.end_of_support(record)
-        return eos.isoformat() if eos else ""
-
-
 CORE_COVERAGE_COLUMNS = {
     "support_coverage_status": (SupportCoverageStatusColumn, _("Support Coverage")),
     "support_end_date": (SupportEndDateColumn, _("Support End Date")),
     "support_days_remaining": (SupportDaysRemainingColumn, _("Support Days Remaining")),
-    "support_reseller": (SupportResellerColumn, _("Support Reseller")),
+    "support_integrator": (SupportIntegratorColumn, _("Integrator Company")),
+    "support_maintenance_company": (SupportMaintenanceCompanyColumn, _("Maintenance Company")),
 }
 
 

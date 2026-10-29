@@ -38,6 +38,10 @@ contract_items = (
         permissions=["dcim.view_device", f"{PLUGIN}.view_supportcoverage"],
     ),
 )
+partner_items = (
+    _item("integrator", _("Integrator Companies")),
+    _item("maintenancecompany", _("Maintenance Companies")),
+)
 lifecycle_items = (_item("hardwarelifecycleeol", _("Hardware EoL")),)
 
 if get_plugin_config(PLUGIN, "top_level_menu"):
@@ -46,8 +50,9 @@ if get_plugin_config(PLUGIN, "top_level_menu"):
         icon_class="mdi mdi-file-certificate-outline",
         groups=(
             (_("Contracts"), contract_items),
+            (_("Partners & Providers"), partner_items),
             (pgettext_lazy("support contracts", "Lifecycle"), lifecycle_items),
         ),
     )
 else:
-    menu_items = (*contract_items, *lifecycle_items)
+    menu_items = (*contract_items, *partner_items, *lifecycle_items)

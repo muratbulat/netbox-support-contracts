@@ -13,10 +13,13 @@ from netbox_support_contracts.choices import ContractTypeChoices
 from netbox_support_contracts.models import HardwareLifecycleEoL
 from netbox_support_contracts.tables import register_core_columns
 
-from . import cover, days, make_contract, make_device, make_device_type
+from . import cover, days, make_contract, make_device, make_device_type, make_integrator, make_maintenance_company
 
 PLUGIN = "netbox_support_contracts"
-COVERAGE_COLUMNS = ("support_coverage_status", "support_end_date", "support_days_remaining", "support_reseller")
+COVERAGE_COLUMNS = (
+    "support_coverage_status", "support_end_date", "support_days_remaining", "support_integrator",
+    "support_maintenance_company",
+)
 
 
 class RegistrationTests(TestCase):
@@ -31,7 +34,8 @@ class RegistrationTests(TestCase):
     def test_registration_is_idempotent(self):
         register_core_columns()
         register_core_columns()
-        self.assertEqual(sum(name in COVERAGE_COLUMNS for name in registry["tables"][DeviceTable]), 4)
+        registered = [name for name in registry["tables"][DeviceTable] if name in COVERAGE_COLUMNS]
+        self.assertEqual(len(registered), len(COVERAGE_COLUMNS))
 
     def test_columns_offered_in_table_configuration(self):
         for table in (DeviceTable, VirtualMachineTable, ModuleTable):
@@ -44,7 +48,8 @@ class RegistrationTests(TestCase):
             "support_coverage_status": ("Support Coverage", "Destek Kapsamı"),
             "support_end_date": ("Support End Date", "Destek Bitiş Tarihi"),
             "support_days_remaining": ("Support Days Remaining", "Destek Kalan Gün"),
-            "support_reseller": ("Support Reseller", "Destek Sağlayıcı"),
+            "support_integrator": ("Integrator Company", "Entegratör Firma"),
+            "support_maintenance_company": ("Maintenance Company", "Bakım Firması"),
         }
         for name, (english, turkish) in expected.items():
             column = registry["tables"][DeviceTable][name]
@@ -67,14 +72,24 @@ class RenderingTests(TestCase):
         cls.lapsed = make_device("Storage-03")
         cls.uncovered = make_device("Storage-04")
         tpm_a = make_contract(
-            "CONT-2026-001", end_date=days(45), contract_type=ContractTypeChoices.TPM, reseller="Example Maintenance A"
+            "CONT-2026-001", end_date=days(45), contract_type=ContractTypeChoices.TPM,
+            maintenance_company=make_maintenance_company("Example Maintenance A"),
         )
-        tpm_b = make_contract("CONT-2026-002", end_date=days(20), reseller="Example Maintenance B")
-        old = make_contract("CONT-2025-001", end_date=days(-10), reseller="Example Old Partner")
+        tpm_b = make_contract(
+            "CONT-2026-002", end_date=days(20), maintenance_company=make_maintenance_company("Example Maintenance B")
+        )
+        # Expired OEM warranty bought through an integrator: purchase history outlives the warranty.
+        old = make_contract(
+            "CONT-2025-001", end_date=days(-10), contract_type=ContractTypeChoices.WARRANTY,
+            integrator=make_integrator("Example Distributor"),
+        )
         cover(tpm_a, cls.covered)
         cover(tpm_b, cls.covered)
         cover(old, cls.covered)
-        cover(make_contract("CONT-2026-003", end_date=None, reseller="Example Partner"), cls.open_ended)
+        cover(
+            make_contract("CONT-2026-003", end_date=None, maintenance_company=make_maintenance_company("Example TPM")),
+            cls.open_ended,
+        )
         cover(old, cls.lapsed)
         HardwareLifecycleEoL.objects.create(device_type=cls.device_type, end_of_support=days(-1))
 
@@ -97,7 +112,8 @@ class RenderingTests(TestCase):
         self.assertIn("text-bg-yellow", cells["support_coverage_status"])  # 45 days left, within 90-day window
         self.assertEqual(cells["support_end_date"], days(45).isoformat())
         self.assertIn("45 days left", cells["support_days_remaining"])
-        self.assertEqual(cells["support_reseller"], "Example Maintenance A, Example Maintenance B")
+        self.assertEqual(cells["support_maintenance_company"], "Example Maintenance A, Example Maintenance B")
+        self.assertEqual(cells["support_integrator"], "Example Distributor")
         self.assertEqual(values["support_coverage_status"], "Expiring")
         self.assertEqual(values["support_days_remaining"], 45)
 
@@ -109,7 +125,8 @@ class RenderingTests(TestCase):
         self.assertEqual(values["support_days_remaining"], "")
         cells, values = self.cells(admin, self.lapsed)
         self.assertIn("Expired", cells["support_coverage_status"])
-        self.assertEqual(cells["support_reseller"], "—")  # expired contracts no longer provide support
+        self.assertEqual(cells["support_maintenance_company"], "—")  # expired contracts no longer provide support
+        self.assertEqual(cells["support_integrator"], "Example Distributor")
         cells, values = self.cells(admin, self.uncovered)
         self.assertIn("Not covered", cells["support_coverage_status"])
         self.assertEqual(cells["support_end_date"], "—")
@@ -156,11 +173,12 @@ class RenderingTests(TestCase):
 class DeviceListPageTests(TestCase):
     def test_columns_on_device_list(self):
         device = make_device("Storage-01")
-        cover(make_contract("CONT-2026-001", end_date=days(45), reseller="Example Maintenance A"), device)
+        tpm = make_maintenance_company("Example Maintenance A")
+        cover(make_contract("CONT-2026-001", end_date=days(45), maintenance_company=tpm), device)
         self.add_permissions("dcim.view_device", f"{PLUGIN}.view_supportcoverage")
         self.user.config.set("tables.DeviceTable.columns", ["name", *COVERAGE_COLUMNS], commit=True)
         response = self.client.get(reverse("dcim:device_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Support Reseller")
+        self.assertContains(response, "Maintenance Company")
         self.assertContains(response, "Example Maintenance A")
         self.assertContains(response, "45 days left")

@@ -18,7 +18,7 @@ from netbox_support_contracts.models import SupportContract, SupportCoverage
 from netbox_support_contracts.services import annotate_contracts, bulk_add_coverage
 from netbox_support_contracts.tables import SupportContractTable, SupportCoverageTable
 
-from . import cover, days, make_contract, make_device, make_manufacturer, make_vm
+from . import cover, days, make_contract, make_device, make_maintenance_company, make_manufacturer, make_vm
 
 PLUGIN = "netbox_support_contracts"
 
@@ -34,11 +34,12 @@ class ContractFixtures:
         cls.storage_b = make_device("Storage-02", serial="SN-10002")
         cls.server = make_device("Server-01", serial="SN-10003")
         cls.tpm_2026 = make_contract(
-            "CONT-2026-001", end_date=days(30), contract_type=ContractTypeChoices.TPM, reseller="Example Maintenance A"
+            "CONT-2026-001", end_date=days(30), contract_type=ContractTypeChoices.TPM,
+            maintenance_company=make_maintenance_company("Example Maintenance A"),
         )
         cls.tpm_2027 = make_contract(
             "CONT-2027-001", end_date=days(395), contract_type=ContractTypeChoices.TPM,
-            reseller="Example Maintenance B",
+            maintenance_company=make_maintenance_company("Example Maintenance B"),
         )
         cls.warranty = make_contract("CONT-2026-002", end_date=days(700), contract_type=ContractTypeChoices.WARRANTY)
         cls.software = make_contract(
@@ -81,20 +82,22 @@ class ContractTypeModelTests(ContractFixtures, TestCase):
         result = bulk_add_coverage(self.software, user=admin, devices=[self.server], sku="VEEAM-SOCKET", quantity=2)
         self.assertEqual(result.created[0].quantity, 2)
 
-    def test_coverage_filters_by_reseller_and_type(self):
+    def test_coverage_filters_by_maintenance_company_and_type(self):
         qs = SupportCoverage.objects.all()
-        self.assertEqual(set(SupportCoverageFilterSet({"reseller": "maintenance a"}, qs).qs), {self.row_a, self.row_b})
+        company_a = {"maintenance_company_id": [self.tpm_2026.maintenance_company.pk]}
+        self.assertEqual(set(SupportCoverageFilterSet(company_a, qs).qs), {self.row_a, self.row_b})
         software = SupportCoverageFilterSet({"contract_type": ["software"]}, qs).qs
         self.assertEqual(set(software), {self.office, self.veeam})
         self.assertEqual(set(SupportCoverageFilterSet({"q": "Maintenance A"}, qs).qs), {self.row_a, self.row_b})
         self.assertEqual(list(SupportCoverageFilterSet({"quantity": [250]}, qs).qs), [self.office])
 
-    def test_device_report_filters_by_reseller_and_type(self):
+    def test_device_report_filters_by_maintenance_company_and_type(self):
         from dcim.models import Device
 
         qs = Device.objects.all()
         self.assertEqual(
-            set(DeviceCoverageFilterSet({"reseller": "Maintenance A"}, qs).qs), {self.storage_a, self.storage_b}
+            set(DeviceCoverageFilterSet({"maintenance_company_id": [self.tpm_2026.maintenance_company.pk]}, qs).qs),
+            {self.storage_a, self.storage_b},
         )
         self.assertEqual(list(DeviceCoverageFilterSet({"contract_type": ["warranty"]}, qs).qs), [self.server])
         cover(self.tpm_2027, self.storage_a)  # a second matching contract must not duplicate the device
@@ -105,7 +108,7 @@ class ContractTypeModelTests(ContractFixtures, TestCase):
         self.assertIn("contract_type", contracts.Meta.default_columns)
         self.assertIn("sku_count", contracts.columns.names())
         coverage = SupportCoverageTable(SupportCoverage.objects.all())
-        self.assertIn("reseller", coverage.Meta.default_columns)
+        self.assertIn("maintenance_company", coverage.Meta.default_columns)
         self.assertIn("quantity", coverage.Meta.default_columns)
         self.assertIn("contract_type", coverage.columns.names())
 
@@ -132,16 +135,16 @@ class ContractTypeViewTests(ContractFixtures, TestCase):
         self.assertContains(response, "CONT-2027-001")
         self.assertNotContains(response, "CONT-2026-003")
 
-    def test_coverage_detail_shows_type_reseller_quantity(self):
+    def test_coverage_detail_shows_type_company_quantity(self):
         response = self.client.get(self.office.get_absolute_url())
         self.assertContains(response, "Software License / Subscription")
         self.assertContains(response, "250")
         response = self.client.get(self.row_a.get_absolute_url())
         self.assertContains(response, "Example Maintenance A")
 
-    def test_device_panel_shows_type_and_reseller(self):
+    def test_device_panel_shows_type_and_maintenance_company(self):
         response = self.client.get(self.storage_a.get_absolute_url())
-        self.assertContains(response, "Reseller / Provider")
+        self.assertContains(response, "Maintenance Company")
         self.assertContains(response, "Example Maintenance A")
         self.assertContains(response, "Third-Party Maintenance (TPM)")
 
@@ -156,7 +159,9 @@ class ContractTypeViewTests(ContractFixtures, TestCase):
         self.assertContains(response, "OEM Warranty")
 
     def test_device_report_filter(self):
-        response = self.client.get(url("device_coverage"), {"reseller": "Maintenance A"})
+        response = self.client.get(
+            url("device_coverage"), {"maintenance_company_id": self.tpm_2026.maintenance_company.pk}
+        )
         self.assertContains(response, "Storage-01")
         self.assertNotContains(response, "Server-01")
 
@@ -169,7 +174,9 @@ class ContractTypeViewTests(ContractFixtures, TestCase):
         self.assertEqual(set(self.tpm_2027.coverage.values_list("device_id", flat=True)),
                          {self.storage_a.pk, self.storage_b.pk})
         self.assertFalse(self.tpm_2026.coverage.exists())
-        response = self.client.get(url("supportcoverage_list"), {"reseller": "Maintenance B"})
+        response = self.client.get(
+            url("supportcoverage_list"), {"maintenance_company_id": self.tpm_2027.maintenance_company.pk}
+        )
         self.assertContains(response, "Storage-01")
 
     def test_bulk_edit_move_rejects_duplicate_coverage(self):
@@ -272,5 +279,5 @@ class ContractTypeTranslationTests(ContractFixtures, TestCase):
         self.add_permissions(f"{PLUGIN}.view_supportcoverage", "dcim.view_device")
         self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "tr"
         response = self.client.get(self.storage_a.get_absolute_url())
-        self.assertContains(response, "Bayi / Destek Sağlayıcı")
+        self.assertContains(response, "Bakım Firması")
         self.assertContains(response, "3. Parti Bakım Anlaşması (TPM)")

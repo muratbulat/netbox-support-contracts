@@ -45,7 +45,8 @@
             <th>{% trans "Contract #" %}</th>
             <th>{% trans "Type" %}</th>
             <th>{% trans "Manufacturer" %}</th>
-            <th>{% trans "Reseller / Provider" %}</th>
+            <th>{% trans "Integrator Company" %}</th>
+            <th>{% trans "Maintenance Company" %}</th>
             <th>{% trans "SLA" %}</th>
             <th>{% trans "End Date" %}</th>
             <th>{% trans "Days Remaining" %}</th>
@@ -57,8 +58,9 @@
             <tr>
               <td><a href="{{ row.coverage.get_absolute_url }}">{{ row.contract.contract_number }}</a></td>
               <td><span class="badge text-bg-{{ row.contract.get_contract_type_color }}">{{ row.contract.get_contract_type_display }}</span></td>
-              <td>{{ row.contract.manufacturer }}</td>
-              <td>{{ row.contract.reseller|placeholder }}</td>
+              <td>{{ row.contract.manufacturer|linkify|placeholder }}</td>
+              <td>{{ row.coverage.effective_integrator|linkify|placeholder }}</td>
+              <td>{{ row.contract.maintenance_company|linkify|placeholder }}</td>
               <td>{{ row.contract.service_level|placeholder }}</td>
               <td>
                 {% if row.coverage.effective_end_date %}{{ row.coverage.effective_end_date|isodate }}{% else %}<span class="text-muted">{% trans "Open-ended" %}</span>{% endif %}

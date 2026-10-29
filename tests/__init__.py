@@ -13,7 +13,7 @@ from dcim.models import Device, DeviceRole, DeviceType, Manufacturer, Module, Mo
 from django.utils import timezone
 from virtualization.models import Cluster, ClusterType, VirtualMachine
 
-from netbox_support_contracts.models import SupportContract, SupportCoverage
+from netbox_support_contracts.models import Integrator, MaintenanceCompany, SupportContract, SupportCoverage
 
 
 def today():
@@ -57,9 +57,25 @@ def make_module(device, serial="MOD-10001", model="Linecard-8"):
     return Module.objects.create(device=device, module_bay=bay, module_type=module_type, serial=serial)
 
 
-def make_contract(number="CONT-2026-001", end_date=None, manufacturer=None, **kwargs):
+def make_integrator(name="Example Integrator"):
+    slug = name.lower().replace(" ", "-")
+    return Integrator.objects.get_or_create(name=name, defaults={"slug": slug})[0]
+
+
+def make_maintenance_company(name="Example Maintenance"):
+    slug = name.lower().replace(" ", "-")
+    return MaintenanceCompany.objects.get_or_create(name=name, defaults={"slug": slug})[0]
+
+
+DEFAULT = object()
+
+
+def make_contract(number="CONT-2026-001", end_date=None, manufacturer=DEFAULT, **kwargs):
+    """A contract for Acme Corp unless another manufacturer (or None, e.g. for TPM contracts) is given."""
+    if manufacturer is DEFAULT:
+        manufacturer = make_manufacturer()
     return SupportContract.objects.create(
-        manufacturer=manufacturer or make_manufacturer(), contract_number=number, end_date=end_date, **kwargs
+        manufacturer=manufacturer, contract_number=number, end_date=end_date, **kwargs
     )
 
 

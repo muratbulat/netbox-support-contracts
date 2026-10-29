@@ -7,9 +7,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext_lazy, pgettext_lazy
 from django.views.generic import View
+from extras.ui.panels import CustomFieldsPanel, TagsPanel
 from netbox.object_actions import AddObject, BulkDelete, BulkEdit, BulkExport, BulkImport
+from netbox.ui import attrs, layout, panels
 from netbox.views import generic
 from utilities.constants import CSV_DELIMITERS
 from utilities.exceptions import PermissionsViolation
@@ -17,9 +19,10 @@ from utilities.views import ContentTypePermissionRequiredMixin, ViewTab, registe
 from virtualization.models import VirtualMachine
 
 from . import filtersets, forms, tables
-from .models import HardwareLifecycleEoL, SupportContract, SupportCoverage
+from .models import HardwareLifecycleEoL, Integrator, MaintenanceCompany, SupportContract, SupportCoverage
 from .services import (
     MAX_BULK_ITEMS,
+    annotate_companies,
     annotate_contracts,
     annotate_coverage,
     annotate_devices,
@@ -63,13 +66,16 @@ LIST_ACTIONS = (AddObject, BulkImport, BulkExport, BulkEdit, BulkDelete)
 def coverage_queryset():
     return annotate_coverage(
         SupportCoverage.objects.select_related(
-            "contract__manufacturer", "device__device_type", "device__site", "virtual_machine", "module__module_type",
+            "contract__manufacturer", "contract__integrator", "contract__maintenance_company", "integrator",
+            "device__device_type", "device__site", "virtual_machine", "module__module_type",
         )
     )
 
 
 def contract_queryset():
-    return annotate_contracts(SupportContract.objects.select_related("manufacturer", "tenant"))
+    return annotate_contracts(
+        SupportContract.objects.select_related("manufacturer", "integrator", "maintenance_company", "tenant")
+    )
 
 
 #
@@ -189,7 +195,7 @@ class BulkAddCoverageView(CoveragePermissionView):
         # Only objects the user may view can be picked (and covered).
         restricted = {
             "devices": Device, "virtual_machines": VirtualMachine, "modules": Module,
-            "site": Site, "device_type": DeviceType, "role": DeviceRole,
+            "site": Site, "device_type": DeviceType, "role": DeviceRole, "integrator": Integrator,
         }
         for name, model in restricted.items():
             form.fields[name].queryset = model.objects.restrict(request.user, "view")
@@ -234,7 +240,9 @@ class BulkAddCoverageView(CoveragePermissionView):
                 serials=form.cleaned_data["serials"],
                 sku=form.cleaned_data["sku"],
                 quantity=form.cleaned_data["quantity"],
+                start_date=form.cleaned_data["start_date"],
                 end_date=form.cleaned_data["end_date"],
+                integrator=form.cleaned_data["integrator"],
                 notes=form.cleaned_data["notes"],
             )
         except PermissionsViolation:
@@ -257,10 +265,155 @@ class BulkAddCoverageView(CoveragePermissionView):
             "serials": "\n".join([*result.unmatched, *result.ambiguous]),
             "sku": form.cleaned_data["sku"],
             "quantity": form.cleaned_data["quantity"],
+            "start_date": form.cleaned_data["start_date"],
             "end_date": form.cleaned_data["end_date"],
+            "integrator": form.cleaned_data["integrator"],
             "notes": form.cleaned_data["notes"],
         })
         return self.render_page(request, contract, retry, result)
+
+
+#
+# Partner companies (integrators & maintenance companies)
+#
+
+class CompanyPanel(panels.ObjectAttributesPanel):
+    name = attrs.TextAttr("name")
+    contact_name = attrs.TextAttr("contact_name", label=pgettext_lazy("support contracts", "Contact Name"))
+    contact_email = attrs.TextAttr(
+        "contact_email", label=pgettext_lazy("support contracts", "Contact Email"), copy_button=True,
+    )
+    contact_phone = attrs.TextAttr(
+        "contact_phone", label=pgettext_lazy("support contracts", "Contact Phone"), copy_button=True,
+    )
+    portal_url = attrs.TemplatedAttr(
+        "portal_url", label=gettext_lazy("Website / Portal URL"), template_name=f"{PLUGIN}/attrs/portal_url.html"
+    )
+    description = attrs.TextAttr("description")
+
+
+class MaintenanceCompanyPanel(CompanyPanel):
+    contact_phone = attrs.TextAttr("contact_phone", label=gettext_lazy("Support Phone"), copy_button=True)
+    portal_url = attrs.TemplatedAttr(
+        "portal_url", label=gettext_lazy("Support Portal URL"), template_name=f"{PLUGIN}/attrs/portal_url.html"
+    )
+
+
+class CompanyCountsPanel(panels.ObjectAttributesPanel):
+    contract_count = attrs.NumericAttr("contract_count", label=gettext_lazy("Contracts"))
+    device_count = attrs.NumericAttr("device_count", label=gettext_lazy("Covered devices"))
+
+
+def company_layout(panel, filter_name):
+    return layout.SimpleLayout(
+        left_panels=[panel(), TagsPanel()],
+        right_panels=[CompanyCountsPanel(title=gettext_lazy("Usage")), CustomFieldsPanel(), panels.CommentsPanel()],
+        bottom_panels=[
+            panels.ObjectsTablePanel(
+                model=f"{PLUGIN}.SupportContract",
+                title=gettext_lazy("Support Contracts"),
+                filters={filter_name: lambda ctx: ctx["object"].pk},
+            ),
+        ],
+    )
+
+
+@register_model_view(Integrator, "list", path="", detail=False)
+class IntegratorListView(generic.ObjectListView):
+    queryset = annotate_companies(Integrator.objects.all())
+    table = tables.IntegratorTable
+    filterset = filtersets.IntegratorFilterSet
+    filterset_form = forms.IntegratorFilterForm
+    actions = LIST_ACTIONS
+
+
+@register_model_view(Integrator)
+class IntegratorView(generic.ObjectView):
+    queryset = annotate_companies(Integrator.objects.all())
+    template_name = "generic/object.html"
+    layout = company_layout(CompanyPanel, "integrator_id")
+
+
+@register_model_view(Integrator, "add", detail=False)
+@register_model_view(Integrator, "edit")
+class IntegratorEditView(generic.ObjectEditView):
+    queryset = Integrator.objects.all()
+    form = forms.IntegratorForm
+
+
+@register_model_view(Integrator, "delete")
+class IntegratorDeleteView(generic.ObjectDeleteView):
+    queryset = Integrator.objects.all()
+
+
+@register_model_view(Integrator, "bulk_import", path="import", detail=False)
+class IntegratorBulkImportView(generic.BulkImportView):
+    queryset = Integrator.objects.all()
+    model_form = forms.IntegratorImportForm
+
+
+@register_model_view(Integrator, "bulk_edit", path="edit", detail=False)
+class IntegratorBulkEditView(generic.BulkEditView):
+    queryset = annotate_companies(Integrator.objects.all())
+    filterset = filtersets.IntegratorFilterSet
+    table = tables.IntegratorTable
+    form = forms.IntegratorBulkEditForm
+
+
+@register_model_view(Integrator, "bulk_delete", path="delete", detail=False)
+class IntegratorBulkDeleteView(generic.BulkDeleteView):
+    queryset = annotate_companies(Integrator.objects.all())
+    filterset = filtersets.IntegratorFilterSet
+    table = tables.IntegratorTable
+
+
+@register_model_view(MaintenanceCompany, "list", path="", detail=False)
+class MaintenanceCompanyListView(generic.ObjectListView):
+    queryset = annotate_companies(MaintenanceCompany.objects.all())
+    table = tables.MaintenanceCompanyTable
+    filterset = filtersets.MaintenanceCompanyFilterSet
+    filterset_form = forms.MaintenanceCompanyFilterForm
+    actions = LIST_ACTIONS
+
+
+@register_model_view(MaintenanceCompany)
+class MaintenanceCompanyView(generic.ObjectView):
+    queryset = annotate_companies(MaintenanceCompany.objects.all())
+    template_name = "generic/object.html"
+    layout = company_layout(MaintenanceCompanyPanel, "maintenance_company_id")
+
+
+@register_model_view(MaintenanceCompany, "add", detail=False)
+@register_model_view(MaintenanceCompany, "edit")
+class MaintenanceCompanyEditView(generic.ObjectEditView):
+    queryset = MaintenanceCompany.objects.all()
+    form = forms.MaintenanceCompanyForm
+
+
+@register_model_view(MaintenanceCompany, "delete")
+class MaintenanceCompanyDeleteView(generic.ObjectDeleteView):
+    queryset = MaintenanceCompany.objects.all()
+
+
+@register_model_view(MaintenanceCompany, "bulk_import", path="import", detail=False)
+class MaintenanceCompanyBulkImportView(generic.BulkImportView):
+    queryset = MaintenanceCompany.objects.all()
+    model_form = forms.MaintenanceCompanyImportForm
+
+
+@register_model_view(MaintenanceCompany, "bulk_edit", path="edit", detail=False)
+class MaintenanceCompanyBulkEditView(generic.BulkEditView):
+    queryset = annotate_companies(MaintenanceCompany.objects.all())
+    filterset = filtersets.MaintenanceCompanyFilterSet
+    table = tables.MaintenanceCompanyTable
+    form = forms.MaintenanceCompanyBulkEditForm
+
+
+@register_model_view(MaintenanceCompany, "bulk_delete", path="delete", detail=False)
+class MaintenanceCompanyBulkDeleteView(generic.BulkDeleteView):
+    queryset = annotate_companies(MaintenanceCompany.objects.all())
+    filterset = filtersets.MaintenanceCompanyFilterSet
+    table = tables.MaintenanceCompanyTable
 
 
 #

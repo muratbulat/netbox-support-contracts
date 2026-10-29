@@ -7,7 +7,7 @@
 
 {% block subtitle %}
   <div class="text-secondary fs-5">
-    {{ object.manufacturer }}{% if object.service_level %} · {{ object.service_level }}{% endif %}
+    {{ object.provider }}{% if object.service_level %} · {{ object.service_level }}{% endif %}
     · {% if object.end_date %}{% trans "ends" %} {{ object.end_date|isodate }}{% else %}{% trans "open-ended" %}{% endif %}
   </div>
 {% endblock subtitle %}

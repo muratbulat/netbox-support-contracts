@@ -20,7 +20,32 @@ if TYPE_CHECKING:
     from tenancy.graphql.filters import TenantFilter
     from virtualization.graphql.filters import VirtualMachineFilter
 
-__all__ = ("HardwareLifecycleEoLFilter", "SupportContractFilter", "SupportCoverageFilter")
+# Lazy references to this module (types/filters that refer to each other).
+PLUGIN_FILTERS = "netbox_support_contracts.graphql.filters"
+
+__all__ = (
+    "HardwareLifecycleEoLFilter",
+    "IntegratorFilter",
+    "MaintenanceCompanyFilter",
+    "SupportContractFilter",
+    "SupportCoverageFilter",
+)
+
+
+@strawberry_django.filter_type(models.Integrator, lookups=True)
+class IntegratorFilter(PrimaryModelFilter):
+    name: StrFilterLookup | None = strawberry_django.filter_field()
+    slug: StrFilterLookup | None = strawberry_django.filter_field()
+    contact_name: StrFilterLookup | None = strawberry_django.filter_field()
+    contact_email: StrFilterLookup | None = strawberry_django.filter_field()
+
+
+@strawberry_django.filter_type(models.MaintenanceCompany, lookups=True)
+class MaintenanceCompanyFilter(PrimaryModelFilter):
+    name: StrFilterLookup | None = strawberry_django.filter_field()
+    slug: StrFilterLookup | None = strawberry_django.filter_field()
+    contact_name: StrFilterLookup | None = strawberry_django.filter_field()
+    contact_email: StrFilterLookup | None = strawberry_django.filter_field()
 
 
 # Cost/currency are deliberately not filterable: filtering would leak values gated by view_cost.
@@ -35,7 +60,14 @@ class SupportContractFilter(PrimaryModelFilter):
     service_level: StrFilterLookup | None = strawberry_django.filter_field()
     start_date: DateFilterLookup | None = strawberry_django.filter_field()
     end_date: DateFilterLookup | None = strawberry_django.filter_field()
-    reseller: StrFilterLookup | None = strawberry_django.filter_field()
+    integrator: Annotated["IntegratorFilter", strawberry.lazy(PLUGIN_FILTERS)] | None = (
+        strawberry_django.filter_field()
+    )
+    integrator_id: ID | None = strawberry_django.filter_field()
+    maintenance_company: Annotated["MaintenanceCompanyFilter", strawberry.lazy(PLUGIN_FILTERS)] | None = (
+        strawberry_django.filter_field()
+    )
+    maintenance_company_id: ID | None = strawberry_django.filter_field()
     tenant: Annotated["TenantFilter", strawberry.lazy("tenancy.graphql.filters")] | None = (
         strawberry_django.filter_field()
     )
@@ -44,7 +76,7 @@ class SupportContractFilter(PrimaryModelFilter):
 
 @strawberry_django.filter_type(models.SupportCoverage, lookups=True)
 class SupportCoverageFilter(NetBoxModelFilter):
-    contract: Annotated["SupportContractFilter", strawberry.lazy("netbox_support_contracts.graphql.filters")] | None = (
+    contract: Annotated["SupportContractFilter", strawberry.lazy(PLUGIN_FILTERS)] | None = (
         strawberry_django.filter_field()
     )
     contract_id: ID | None = strawberry_django.filter_field()

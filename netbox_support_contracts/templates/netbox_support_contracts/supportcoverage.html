@@ -20,15 +20,22 @@
           </tr>
           <tr>
             <th scope="row">{% trans "Manufacturer" %}</th>
-            <td>{{ object.contract.manufacturer|linkify }}</td>
+            <td>{{ object.contract.manufacturer|linkify|placeholder }}</td>
           </tr>
           <tr>
             <th scope="row">{% trans "Contract Type" %}</th>
             <td><span class="badge text-bg-{{ object.contract.get_contract_type_color }}">{{ object.contract.get_contract_type_display }}</span></td>
           </tr>
           <tr>
-            <th scope="row">{% trans "Reseller" %}</th>
-            <td>{{ object.contract.reseller|placeholder }}</td>
+            <th scope="row">{% trans "Integrator Company" %}</th>
+            <td>
+              {{ object.effective_integrator|linkify|placeholder }}
+              {% if object.effective_integrator and not object.integrator %}<span class="text-muted small ms-1">({% trans "inherited" %})</span>{% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Maintenance Company" %}</th>
+            <td>{{ object.contract.maintenance_company|linkify|placeholder }}</td>
           </tr>
           <tr>
             <th scope="row">{% trans "Service Level" %}</th>
@@ -76,7 +83,10 @@
         <table class="table table-hover attr-table">
           <tr>
             <th scope="row">{% trans "Start Date" %}</th>
-            <td>{{ object.contract.start_date|isodate|placeholder }}</td>
+            <td>
+              {{ object.effective_start_date|isodate|placeholder }}
+              {% if object.start_date %}<span class="badge text-bg-blue ms-1">{% trans "Override" %}</span>{% endif %}
+            </td>
           </tr>
           <tr>
             <th scope="row">{% trans "End Date" %}</th>

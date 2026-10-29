@@ -14,13 +14,15 @@ from tenancy.api.serializers import TenantSerializer
 from virtualization.api.serializers import VirtualMachineSerializer
 
 from ..choices import ContractStateChoices, ContractTypeChoices
-from ..models import HardwareLifecycleEoL, SupportContract, SupportCoverage
+from ..models import HardwareLifecycleEoL, Integrator, MaintenanceCompany, SupportContract, SupportCoverage
 from ..services import MAX_BULK_ITEMS, may_view_cost, parse_serials
 
 __all__ = (
     "BulkAddCoverageSerializer",
     "BulkRemoveCoverageSerializer",
     "HardwareLifecycleEoLSerializer",
+    "IntegratorSerializer",
+    "MaintenanceCompanySerializer",
     "SupportContractSerializer",
     "SupportCoverageSerializer",
 )
@@ -28,8 +30,29 @@ __all__ = (
 COST_FIELDS = ("cost", "currency")
 
 
+class IntegratorSerializer(PrimaryModelSerializer):
+    contract_count = serializers.IntegerField(read_only=True, default=None)
+    device_count = serializers.IntegerField(read_only=True, default=None)
+
+    class Meta:
+        model = Integrator
+        fields = (
+            "id", "url", "display_url", "display", "name", "slug", "contact_name", "contact_email", "contact_phone",
+            "portal_url", "contract_count", "device_count", "description", "owner", "comments", "tags",
+            "custom_fields", "created", "last_updated",
+        )
+        brief_fields = ("id", "url", "display", "name", "slug", "description")
+
+
+class MaintenanceCompanySerializer(IntegratorSerializer):
+    class Meta(IntegratorSerializer.Meta):
+        model = MaintenanceCompany
+
+
 class SupportContractSerializer(PrimaryModelSerializer):
-    manufacturer = ManufacturerSerializer(nested=True)
+    manufacturer = ManufacturerSerializer(nested=True, required=False, allow_null=True)
+    integrator = IntegratorSerializer(nested=True, required=False, allow_null=True)
+    maintenance_company = MaintenanceCompanySerializer(nested=True, required=False, allow_null=True)
     tenant = TenantSerializer(nested=True, required=False, allow_null=True)
     contract_type = ChoiceField(choices=ContractTypeChoices, required=False)
     state = serializers.ChoiceField(choices=ContractStateChoices, read_only=True)
@@ -43,9 +66,9 @@ class SupportContractSerializer(PrimaryModelSerializer):
         model = SupportContract
         fields = (
             "id", "url", "display_url", "display", "manufacturer", "contract_number", "contract_type", "service_level",
-            "start_date", "end_date", "state", "days_remaining", "reseller", "cost", "currency", "portal_url",
-            "renewal_notes", "tenant", "device_count", "vm_count", "module_count", "sku_count", "description", "owner",
-            "comments", "tags", "custom_fields", "created", "last_updated",
+            "start_date", "end_date", "state", "days_remaining", "integrator", "maintenance_company", "cost",
+            "currency", "portal_url", "renewal_notes", "tenant", "device_count", "vm_count", "module_count",
+            "sku_count", "description", "owner", "comments", "tags", "custom_fields", "created", "last_updated",
         )
         brief_fields = ("id", "url", "display", "contract_number", "end_date", "description")
 
@@ -96,16 +119,19 @@ class SupportCoverageSerializer(NetBoxModelSerializer):
     device = DeviceSerializer(nested=True, required=False, allow_null=True)
     virtual_machine = VirtualMachineSerializer(nested=True, required=False, allow_null=True)
     module = ModuleSerializer(nested=True, required=False, allow_null=True)
+    integrator = IntegratorSerializer(nested=True, required=False, allow_null=True)
+    effective_start_date = serializers.DateField(read_only=True, allow_null=True)
     effective_end_date = serializers.DateField(read_only=True, allow_null=True)
+    effective_integrator = IntegratorSerializer(nested=True, read_only=True, allow_null=True)
     state = serializers.ChoiceField(choices=ContractStateChoices, read_only=True)
     days_remaining = serializers.IntegerField(read_only=True, allow_null=True)
 
     class Meta:
         model = SupportCoverage
         fields = (
-            "id", "url", "display_url", "display", "contract", "device", "virtual_machine", "module", "end_date",
-            "effective_end_date", "state", "days_remaining", "sku", "quantity", "notes", "tags", "custom_fields",
-            "created", "last_updated",
+            "id", "url", "display_url", "display", "contract", "device", "virtual_machine", "module", "start_date",
+            "end_date", "effective_start_date", "effective_end_date", "integrator", "effective_integrator", "state",
+            "days_remaining", "sku", "quantity", "notes", "tags", "custom_fields", "created", "last_updated",
         )
         brief_fields = ("id", "url", "display", "contract", "sku")
 
@@ -160,7 +186,9 @@ class BulkAddCoverageSerializer(serializers.Serializer):
     serials = SerialsField(required=False, default=list)
     sku = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
     quantity = serializers.IntegerField(min_value=0, required=False, allow_null=True, default=None)
+    start_date = serializers.DateField(required=False, allow_null=True, default=None)
     end_date = serializers.DateField(required=False, allow_null=True, default=None)
+    integrator_id = serializers.IntegerField(min_value=1, required=False, allow_null=True, default=None)
     notes = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
 
     def validate_serials(self, value):

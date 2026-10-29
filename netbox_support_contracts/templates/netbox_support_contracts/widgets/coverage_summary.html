@@ -34,7 +34,7 @@
         {% for row in contracts %}
           <tr>
             <td>{{ row.contract|linkify:"contract_number" }}</td>
-            <td>{{ row.contract.manufacturer }}</td>
+            <td>{{ row.contract.provider }}</td>
             <td class="text-end">{{ row.contract.device_count }}</td>
             <td>{{ row.contract.end_date|isodate }}</td>
             <td>{{ row.days_badge }}</td>

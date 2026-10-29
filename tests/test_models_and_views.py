@@ -11,7 +11,7 @@ from netbox_support_contracts.services import VIEW_COST_PERMISSION
 from netbox_support_contracts.tables import SupportContractTable
 from netbox_support_contracts.widgets import SupportCoverageSummaryWidget
 
-from . import cover, days, make_contract, make_device, make_device_type, make_manufacturer, make_vm
+from . import cover, days, make_contract, make_device, make_device_type, make_integrator, make_manufacturer, make_vm
 
 PLUGIN = "netbox_support_contracts"
 COST = "1,200.00 USD"
@@ -33,7 +33,7 @@ class ViewTestBase(TestCase):
             "CONT-2026-001",
             end_date=days(45),
             service_level="24x7x4",
-            reseller="Example Partner",
+            integrator=make_integrator("Example Partner"),
             cost="1200.00",
             currency="USD",
             portal_url="https://support.example.com/contracts/CONT-2026-001",
@@ -299,7 +299,7 @@ class GlobalSearchTests(ViewTestBase):
     def test_contract_number_is_searchable(self):
         self.add_permissions(f"{PLUGIN}.view_supportcontract")
         with self.captureOnCommitCallbacks(execute=True):  # the search cache is written on commit
-            contract = make_contract("CONT-2026-077", reseller="Example Partner")
+            contract = make_contract("CONT-2026-077", integrator=make_integrator("Example Partner"))
         response = self.client.get(reverse("search"), {"q": "CONT-2026-077"})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, contract.get_absolute_url())

@@ -11,19 +11,22 @@ from utilities.filtersets import register_filterset
 from virtualization.models import VirtualMachine
 
 from .choices import ContractStateChoices, ContractTypeChoices, CoverageStatusChoices
-from .models import HardwareLifecycleEoL, SupportContract, SupportCoverage
+from .models import HardwareLifecycleEoL, Integrator, MaintenanceCompany, SupportContract, SupportCoverage
 from .services import (
     OPEN_ENDED,
     annotate_coverage,
     annotate_devices,
     contract_state_q,
     coverage_status_q,
+    effective_integrator_q,
     expiry_horizon,
 )
 
 __all__ = (
     "DeviceCoverageFilterSet",
     "HardwareLifecycleEoLFilterSet",
+    "IntegratorFilterSet",
+    "MaintenanceCompanyFilterSet",
     "SupportContractFilterSet",
     "SupportCoverageFilterSet",
 )
@@ -55,6 +58,20 @@ class SupportContractFilterSet(PrimaryModelFilterSet):
         field_name="tenant__slug", queryset=Tenant.objects.all(), to_field_name="slug", label=_("Tenant (slug)")
     )
     contract_type = django_filters.MultipleChoiceFilter(choices=ContractTypeChoices, label=_("Contract type"))
+    integrator_id = django_filters.ModelMultipleChoiceFilter(
+        queryset=Integrator.objects.all(), label=_("Integrator company (ID)")
+    )
+    integrator = django_filters.ModelMultipleChoiceFilter(
+        field_name="integrator__slug", queryset=Integrator.objects.all(), to_field_name="slug",
+        label=_("Integrator company (slug)"),
+    )
+    maintenance_company_id = django_filters.ModelMultipleChoiceFilter(
+        queryset=MaintenanceCompany.objects.all(), label=_("Maintenance company (ID)")
+    )
+    maintenance_company = django_filters.ModelMultipleChoiceFilter(
+        field_name="maintenance_company__slug", queryset=MaintenanceCompany.objects.all(), to_field_name="slug",
+        label=_("Maintenance company (slug)"),
+    )
     state = django_filters.MultipleChoiceFilter(
         choices=ContractStateChoices, method="filter_state", label=pgettext_lazy("support contracts", "State")
     )
@@ -84,7 +101,7 @@ class SupportContractFilterSet(PrimaryModelFilterSet):
         model = SupportContract
         # Cost/currency are deliberately not filterable: filtering would leak values gated by view_cost.
         fields = (
-            "id", "contract_number", "service_level", "start_date", "end_date", "reseller", "portal_url",
+            "id", "contract_number", "service_level", "start_date", "end_date", "portal_url",
             "description",
         )
 
@@ -94,7 +111,8 @@ class SupportContractFilterSet(PrimaryModelFilterSet):
         return queryset.filter(
             Q(contract_number__icontains=value)
             | Q(service_level__icontains=value)
-            | Q(reseller__icontains=value)
+            | Q(integrator__name__icontains=value)
+            | Q(maintenance_company__name__icontains=value)
             | Q(description__icontains=value)
             | Q(comments__icontains=value)
             | Q(manufacturer__name__icontains=value)
@@ -131,7 +149,21 @@ class SupportCoverageFilterSet(NetBoxModelFilterSet):
     contract_type = django_filters.MultipleChoiceFilter(
         field_name="contract__contract_type", choices=ContractTypeChoices, label=_("Contract type")
     )
-    reseller = django_filters.CharFilter(field_name="contract__reseller", lookup_expr="icontains", label=_("Reseller"))
+    integrator_id = django_filters.ModelMultipleChoiceFilter(
+        queryset=Integrator.objects.all(), method="filter_integrator", label=_("Integrator company (ID)")
+    )
+    integrator = django_filters.ModelMultipleChoiceFilter(
+        queryset=Integrator.objects.all(), to_field_name="slug", method="filter_integrator",
+        label=_("Integrator company (slug)"),
+    )
+    maintenance_company_id = django_filters.ModelMultipleChoiceFilter(
+        field_name="contract__maintenance_company", queryset=MaintenanceCompany.objects.all(),
+        label=_("Maintenance company (ID)"),
+    )
+    maintenance_company = django_filters.ModelMultipleChoiceFilter(
+        field_name="contract__maintenance_company__slug", queryset=MaintenanceCompany.objects.all(),
+        to_field_name="slug", label=_("Maintenance company (slug)"),
+    )
     state = django_filters.MultipleChoiceFilter(
         choices=ContractStateChoices, method="filter_state", label=pgettext_lazy("support contracts", "State")
     )
@@ -157,7 +189,9 @@ class SupportCoverageFilterSet(NetBoxModelFilterSet):
             Q(sku__icontains=value)
             | Q(notes__icontains=value)
             | Q(contract__contract_number__icontains=value)
-            | Q(contract__reseller__icontains=value)
+            | Q(integrator__name__icontains=value)
+            | Q(contract__integrator__name__icontains=value)
+            | Q(contract__maintenance_company__name__icontains=value)
             | Q(device__name__icontains=value)
             | Q(device__serial__iexact=value.strip())
             | Q(virtual_machine__name__icontains=value)
@@ -168,6 +202,12 @@ class SupportCoverageFilterSet(NetBoxModelFilterSet):
         if not value:
             return queryset
         return filter_states(annotate_coverage(queryset), "effective_end", value)
+
+    def filter_integrator(self, queryset, name, value):
+        """Rows whose effective integrator (row override, else the contract's) is one of the selected."""
+        if not value:
+            return queryset
+        return queryset.filter(effective_integrator_q(value))
 
     def filter_object_type(self, queryset, name, value):
         if value == "none":
@@ -217,6 +257,40 @@ class HardwareLifecycleEoLFilterSet(PrimaryModelFilterSet):
         return filter_states(queryset, "end_of_support", value)
 
 
+class CompanyFilterSet(PrimaryModelFilterSet):
+    """Shared filters of the partner company models."""
+
+    def search(self, queryset, name, value):
+        if not value.strip():
+            return queryset
+        return queryset.filter(
+            Q(name__icontains=value)
+            | Q(contact_name__icontains=value)
+            | Q(contact_email__icontains=value)
+            | Q(description__icontains=value)
+            | Q(comments__icontains=value)
+        )
+
+
+COMPANY_FILTER_FIELDS = (
+    "id", "name", "slug", "contact_name", "contact_email", "contact_phone", "portal_url", "description",
+)
+
+
+@register_filterset
+class IntegratorFilterSet(CompanyFilterSet):
+    class Meta:
+        model = Integrator
+        fields = COMPANY_FILTER_FIELDS
+
+
+@register_filterset
+class MaintenanceCompanyFilterSet(CompanyFilterSet):
+    class Meta:
+        model = MaintenanceCompany
+        fields = COMPANY_FILTER_FIELDS
+
+
 class DeviceCoverageFilterSet(django_filters.FilterSet):
     """Device-side coverage filters for the plugin's Device Coverage report (not registered for dcim.Device)."""
 
@@ -235,7 +309,12 @@ class DeviceCoverageFilterSet(django_filters.FilterSet):
     contract_type = django_filters.MultipleChoiceFilter(
         choices=ContractTypeChoices, method="filter_contract", label=_("Contract type")
     )
-    reseller = django_filters.CharFilter(method="filter_contract", label=_("Reseller"))
+    integrator_id = django_filters.ModelMultipleChoiceFilter(
+        queryset=Integrator.objects.all(), method="filter_contract", label=_("Integrator company (ID)")
+    )
+    maintenance_company_id = django_filters.ModelMultipleChoiceFilter(
+        queryset=MaintenanceCompany.objects.all(), method="filter_contract", label=_("Maintenance company (ID)")
+    )
     contract_id = django_filters.ModelMultipleChoiceFilter(
         queryset=SupportContract.objects.all(), method="filter_contract", label=_("Contract")
     )
@@ -260,16 +339,19 @@ class DeviceCoverageFilterSet(django_filters.FilterSet):
         )
 
     def filter_contract(self, queryset, name, value):
-        """Devices covered by at least one contract of the given type(s) / whose reseller contains the value."""
+        """Devices with at least one coverage row matching the contract / type / partner company filter."""
         if not value:
             return queryset
-        lookup = {
-            "contract_type": "contract__contract_type__in",
-            "reseller": "contract__reseller__icontains",
-            "contract_id": "contract__in",
-        }[name]
-        covered = SupportCoverage.objects.filter(device__isnull=False, **{lookup: value}).values("device_id")
-        return queryset.filter(pk__in=covered)
+        if name == "integrator_id":
+            rows = SupportCoverage.objects.filter(effective_integrator_q(value))
+        else:
+            lookup = {
+                "contract_type": "contract__contract_type__in",
+                "contract_id": "contract__in",
+                "maintenance_company_id": "contract__maintenance_company__in",
+            }[name]
+            rows = SupportCoverage.objects.filter(**{lookup: value})
+        return queryset.filter(pk__in=rows.filter(device__isnull=False).values("device_id"))
 
     @staticmethod
     def _with_coverage_end(queryset):

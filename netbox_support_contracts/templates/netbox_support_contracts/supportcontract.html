@@ -5,7 +5,11 @@
 
 {% block breadcrumbs %}
   {{ block.super }}
-  <li class="breadcrumb-item"><a href="{% url 'plugins:netbox_support_contracts:supportcontract_list' %}?manufacturer_id={{ object.manufacturer.pk }}">{{ object.manufacturer }}</a></li>
+  {% if object.manufacturer %}
+    <li class="breadcrumb-item"><a href="{% url 'plugins:netbox_support_contracts:supportcontract_list' %}?manufacturer_id={{ object.manufacturer.pk }}">{{ object.manufacturer }}</a></li>
+  {% elif object.maintenance_company %}
+    <li class="breadcrumb-item"><a href="{% url 'plugins:netbox_support_contracts:supportcontract_list' %}?maintenance_company_id={{ object.maintenance_company.pk }}">{{ object.maintenance_company }}</a></li>
+  {% endif %}
 {% endblock breadcrumbs %}
 
 {% block extra_controls %}
@@ -24,7 +28,7 @@
         <table class="table table-hover attr-table">
           <tr>
             <th scope="row">{% trans "Manufacturer" %}</th>
-            <td>{{ object.manufacturer|linkify }}</td>
+            <td>{{ object.manufacturer|linkify|placeholder }}</td>
           </tr>
           <tr>
             <th scope="row">{% trans "Contract Number" %}</th>
@@ -98,8 +102,12 @@
         <h2 class="card-header">{% trans "Commercial" %}</h2>
         <table class="table table-hover attr-table">
           <tr>
-            <th scope="row">{% trans "Reseller" %}</th>
-            <td>{{ object.reseller|placeholder }}</td>
+            <th scope="row">{% trans "Integrator Company" %}</th>
+            <td>{{ object.integrator|linkify|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Maintenance Company" %}</th>
+            <td>{{ object.maintenance_company|linkify|placeholder }}</td>
           </tr>
           <tr>
             <th scope="row">{% trans "Vendor Portal URL" %}</th>

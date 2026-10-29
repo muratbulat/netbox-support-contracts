@@ -9,11 +9,49 @@ from netbox.models import NetBoxModel, PrimaryModel
 from .choices import ContractStateChoices, ContractTypeChoices
 from .services import contract_state, days_label, days_until
 
-__all__ = ("HardwareLifecycleEoL", "SupportContract", "SupportCoverage")
+__all__ = ("HardwareLifecycleEoL", "Integrator", "MaintenanceCompany", "SupportContract", "SupportCoverage")
 
 currency_validator = RegexValidator(
     r"^[A-Za-z]{3}$", _("Enter a 3-letter ISO 4217 currency code (e.g. USD, EUR, TRY).")
 )
+
+
+class CompanyModel(PrimaryModel):
+    """Shared fields of the partner companies (integrators and maintenance companies)."""
+
+    name = models.CharField(verbose_name=_("name"), max_length=128, unique=True)
+    slug = models.SlugField(verbose_name=_("slug"), max_length=128, unique=True)
+    contact_name = models.CharField(verbose_name=_("contact name"), max_length=128, blank=True, default="")
+    contact_email = models.EmailField(verbose_name=_("contact email"), blank=True, default="")
+
+    class Meta:
+        abstract = True
+        ordering = ("name", "pk")
+
+    def __str__(self):
+        return self.name
+
+
+class Integrator(CompanyModel):
+    """Seller / system integrator through which hardware or support was purchased."""
+
+    contact_phone = models.CharField(verbose_name=_("contact phone"), max_length=64, blank=True, default="")
+    portal_url = models.URLField(verbose_name=_("website / portal URL"), max_length=500, blank=True, default="")
+
+    class Meta(CompanyModel.Meta):
+        verbose_name = _("integrator company")
+        verbose_name_plural = _("integrator companies")
+
+
+class MaintenanceCompany(CompanyModel):
+    """Third-party maintenance (TPM) company providing support and spare parts, typically after OEM warranty."""
+
+    contact_phone = models.CharField(verbose_name=_("support phone"), max_length=64, blank=True, default="")
+    portal_url = models.URLField(verbose_name=_("support portal URL"), max_length=500, blank=True, default="")
+
+    class Meta(CompanyModel.Meta):
+        verbose_name = _("maintenance company")
+        verbose_name_plural = _("maintenance companies")
 
 
 class StateMixin:
@@ -48,6 +86,9 @@ class SupportContract(StateMixin, PrimaryModel):
         on_delete=models.PROTECT,
         related_name="support_contracts",
         verbose_name=_("manufacturer"),
+        null=True,
+        blank=True,
+        help_text=_("Hardware/software vendor. Optional for multi-vendor third-party maintenance contracts."),
     )
     contract_number = models.CharField(verbose_name=_("contract number"), max_length=128)
     contract_type = models.CharField(
@@ -70,12 +111,23 @@ class SupportContract(StateMixin, PrimaryModel):
         blank=True,
         help_text=_("Last covered day. Leave blank for open-ended."),
     )
-    reseller = models.CharField(
-        verbose_name=_("reseller"),
-        max_length=128,
+    integrator = models.ForeignKey(
+        to=Integrator,
+        on_delete=models.PROTECT,
+        related_name="support_contracts",
+        verbose_name=_("integrator company"),
+        null=True,
         blank=True,
-        default="",
-        help_text=_("Reseller, partner, or contractor"),
+        help_text=_("Seller / system integrator through which the hardware or contract was purchased."),
+    )
+    maintenance_company = models.ForeignKey(
+        to=MaintenanceCompany,
+        on_delete=models.PROTECT,
+        related_name="support_contracts",
+        verbose_name=_("maintenance company"),
+        null=True,
+        blank=True,
+        help_text=_("Third-party maintenance company providing support and spare parts."),
     )
     cost = models.DecimalField(verbose_name=_("cost"), max_digits=12, decimal_places=2, null=True, blank=True)
     currency = models.CharField(
@@ -99,8 +151,8 @@ class SupportContract(StateMixin, PrimaryModel):
     notified_state = models.CharField(max_length=16, blank=True, default="", editable=False)
 
     clone_fields = (
-        "manufacturer", "contract_type", "service_level", "start_date", "end_date", "reseller", "currency",
-        "portal_url", "tenant",
+        "manufacturer", "contract_type", "service_level", "start_date", "end_date", "integrator",
+        "maintenance_company", "currency", "portal_url", "tenant",
     )
 
     class Meta:
@@ -111,8 +163,16 @@ class SupportContract(StateMixin, PrimaryModel):
             models.UniqueConstraint(
                 "manufacturer",
                 Lower("contract_number"),
+                condition=Q(manufacturer__isnull=False),
                 name="netbox_support_contracts_unique_mfr_contract_number",
                 violation_error_message=_("This manufacturer already has a contract with this number."),
+            ),
+            models.UniqueConstraint(
+                "maintenance_company",
+                Lower("contract_number"),
+                condition=Q(manufacturer__isnull=True),
+                name="netbox_support_contracts_unique_tpm_contract_number",
+                violation_error_message=_("This maintenance company already has a contract with this number."),
             ),
         )
         indexes = (models.Index(fields=["end_date"]),)
@@ -130,6 +190,9 @@ class SupportContract(StateMixin, PrimaryModel):
     def clean(self):
         super().clean()
         self.currency = (self.currency or "").strip().upper()
+        if self.manufacturer_id is None and self.maintenance_company_id is None:
+            message = _("Select a manufacturer, a maintenance company, or both.")
+            raise ValidationError({"manufacturer": message, "maintenance_company": message})
         if self.start_date and self.end_date and self.end_date < self.start_date:
             raise ValidationError({"end_date": _("End date cannot be earlier than start date.")})
         if self.cost is not None and not self.currency:
@@ -140,6 +203,11 @@ class SupportContract(StateMixin, PrimaryModel):
     def save(self, *args, **kwargs):
         self.currency = (self.currency or "").strip().upper()
         super().save(*args, **kwargs)
+
+    @property
+    def provider(self):
+        """Who stands behind the contract: the manufacturer, else the third-party maintenance company."""
+        return self.manufacturer or self.maintenance_company
 
     @property
     def cost_display(self):
@@ -180,11 +248,26 @@ class SupportCoverage(StateMixin, NetBoxModel):
         related_name="support_coverage",
         verbose_name=_("module"),
     )
+    start_date = models.DateField(
+        verbose_name=_("start date"),
+        null=True,
+        blank=True,
+        help_text=_("Optional override start date for this specific item (defaults to contract start date)."),
+    )
     end_date = models.DateField(
         verbose_name=_("end date"),
         null=True,
         blank=True,
         help_text=_("Optional override end date for this specific item (defaults to contract end date)."),
+    )
+    integrator = models.ForeignKey(
+        to=Integrator,
+        on_delete=models.SET_NULL,
+        related_name="support_coverage",
+        verbose_name=_("integrator company"),
+        null=True,
+        blank=True,
+        help_text=_("Optional override integrator / seller for this specific item (defaults to contract integrator)."),
     )
     sku = models.CharField(max_length=100, blank=True, default="", verbose_name=_("SKU / License Part Number"))
     quantity = models.PositiveIntegerField(
@@ -247,8 +330,20 @@ class SupportCoverage(StateMixin, NetBoxModel):
         return self.device or self.virtual_machine or self.module
 
     @property
+    def effective_start_date(self):
+        return self.start_date or self.contract.start_date
+
+    @property
     def effective_end_date(self):
         return self.end_date or self.contract.end_date
+
+    @property
+    def effective_integrator(self):
+        return self.integrator or self.contract.integrator
+
+    @property
+    def effective_maintenance_company(self):
+        return self.contract.maintenance_company
 
     def _state_end_date(self):
         return self.effective_end_date
@@ -265,6 +360,10 @@ class SupportCoverage(StateMixin, NetBoxModel):
                     "Select a device, virtual machine, or module (or enter a SKU for a contract-level license)."
                 )
             })
+        if self.contract_id is not None:
+            start, end = self.effective_start_date, self.effective_end_date
+            if start and end and end < start:
+                raise ValidationError({"end_date": _("End date cannot be earlier than start date.")})
         if selected and self.contract_id is not None:
             name = selected[0]
             duplicates = SupportCoverage.objects.filter(

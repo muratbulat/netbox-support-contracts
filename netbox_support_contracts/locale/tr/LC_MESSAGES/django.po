@@ -20,32 +20,32 @@ msgstr "NetBox Destek Sözleşmeleri"
 msgid "Enterprise support contract, warranty coverage, and hardware EoL tracking for NetBox"
 msgstr "NetBox için kurumsal destek sözleşmesi, garanti kapsamı ve donanım EoL takibi"
 
-#: netbox_support_contracts/api/serializers.py:136
+#: netbox_support_contracts/api/serializers.py:162
 msgid "Provide a string or a list of strings."
 msgstr "Bir metin veya metin listesi girin."
 
-#: netbox_support_contracts/api/serializers.py:176
+#: netbox_support_contracts/api/serializers.py:204
 msgid "Provide at least one of device_ids, virtual_machine_ids, module_ids, or serials."
 msgstr "device_ids, virtual_machine_ids, module_ids veya serials alanlarından en az birini girin."
 
-#: netbox_support_contracts/api/serializers.py:191
+#: netbox_support_contracts/api/serializers.py:219
 msgid "Provide at least one of coverage_ids, device_ids, virtual_machine_ids, or module_ids."
 msgstr "coverage_ids, device_ids, virtual_machine_ids veya module_ids alanlarından en az birini girin."
 
-#: netbox_support_contracts/api/serializers.py:69
+#: netbox_support_contracts/api/serializers.py:92
 msgid "You do not have permission to set the contract cost."
 msgstr "Sözleşme maliyetini ayarlama yetkiniz yok."
 
-#: netbox_support_contracts/api/serializers.py:169 netbox_support_contracts/services.py:449
+#: netbox_support_contracts/api/serializers.py:197 netbox_support_contracts/services.py:498
 #, python-brace-format
 msgid "At most {max} serial numbers can be processed at once."
 msgstr "Tek seferde en fazla {max} seri numarası işlenebilir."
 
-#: netbox_support_contracts/api/views.py:104
+#: netbox_support_contracts/api/views.py:110
 msgid "Object-level permissions prevent covering one or more objects."
 msgstr "Nesne düzeyindeki yetkiler, bir veya daha fazla nesnenin kapsama alınmasını engelliyor."
 
-#: netbox_support_contracts/api/views.py:145
+#: netbox_support_contracts/api/views.py:151
 msgid "Object-level permissions prevent removing one or more rows."
 msgstr "Nesne düzeyindeki yetkiler, bir veya daha fazla satırın kaldırılmasını engelliyor."
 
@@ -62,11 +62,11 @@ msgstr "Bilinmeyen veya erişilemeyen ID'ler: {ids}"
 msgid "Active"
 msgstr "Aktif"
 
-#: netbox_support_contracts/choices.py:16 netbox_support_contracts/choices.py:47 netbox_support_contracts/forms.py:462
+#: netbox_support_contracts/choices.py:16 netbox_support_contracts/choices.py:47 netbox_support_contracts/forms.py:601
 msgid "Expiring"
 msgstr "Süresi Yakında Dolacak"
 
-#: netbox_support_contracts/choices.py:17 netbox_support_contracts/choices.py:48 netbox_support_contracts/forms.py:463 netbox_support_contracts/widgets.py:44
+#: netbox_support_contracts/choices.py:17 netbox_support_contracts/choices.py:48 netbox_support_contracts/forms.py:602 netbox_support_contracts/widgets.py:44
 msgid "Expired"
 msgstr "Süresi Dolmuş"
 
@@ -86,368 +86,447 @@ msgstr "3. Parti Bakım Anlaşması (TPM)"
 msgid "Software License / Subscription"
 msgstr "Yazılım Lisansı / Abonelik"
 
-#: netbox_support_contracts/choices.py:46 netbox_support_contracts/forms.py:461 netbox_support_contracts/widgets.py:42
+#: netbox_support_contracts/choices.py:46 netbox_support_contracts/forms.py:600 netbox_support_contracts/widgets.py:42
 msgid "Covered"
 msgstr "Kapsam Dahilinde"
 
-#: netbox_support_contracts/choices.py:49 netbox_support_contracts/forms.py:464
+#: netbox_support_contracts/choices.py:49 netbox_support_contracts/forms.py:603
 msgid "Not covered"
 msgstr "Kapsam Dışı"
 
-#: netbox_support_contracts/filtersets.py:121 netbox_support_contracts/filtersets.py:189 netbox_support_contracts/filtersets.py:233 netbox_support_contracts/filtersets.py:45
+#: netbox_support_contracts/filtersets.py:139 netbox_support_contracts/filtersets.py:229 netbox_support_contracts/filtersets.py:307 netbox_support_contracts/filtersets.py:48
 msgid "Manufacturer (ID)"
 msgstr "Üretici (ID)"
 
-#: netbox_support_contracts/filtersets.py:51
+#: netbox_support_contracts/filtersets.py:54
 msgid "Manufacturer (slug)"
 msgstr "Üretici (slug)"
 
-#: netbox_support_contracts/filtersets.py:53
+#: netbox_support_contracts/filtersets.py:56
 msgid "Tenant (ID)"
 msgstr "Kiracı (ID)"
 
-#: netbox_support_contracts/filtersets.py:55
+#: netbox_support_contracts/filtersets.py:58
 msgid "Tenant (slug)"
 msgstr "Kiracı (slug)"
 
-#: netbox_support_contracts/filtersets.py:132 netbox_support_contracts/filtersets.py:236 netbox_support_contracts/filtersets.py:57 netbox_support_contracts/forms.py:129 netbox_support_contracts/forms.py:160 netbox_support_contracts/forms.py:202 netbox_support_contracts/forms.py:316 netbox_support_contracts/forms.py:456
+#: netbox_support_contracts/filtersets.py:150 netbox_support_contracts/filtersets.py:310 netbox_support_contracts/filtersets.py:60 netbox_support_contracts/forms.py:156 netbox_support_contracts/forms.py:188 netbox_support_contracts/forms.py:238 netbox_support_contracts/forms.py:445 netbox_support_contracts/forms.py:590
 msgid "Contract type"
 msgstr "Sözleşme türü"
 
-#: netbox_support_contracts/filtersets.py:136 netbox_support_contracts/filtersets.py:59 netbox_support_contracts/forms.py:55 netbox_support_contracts/tables.py:114 netbox_support_contracts/tables.py:191 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:52 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:42 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:89
+#: netbox_support_contracts/filtersets.py:153 netbox_support_contracts/filtersets.py:313 netbox_support_contracts/filtersets.py:62
+msgid "Integrator company (ID)"
+msgstr "Entegratör firma (ID)"
+
+#: netbox_support_contracts/filtersets.py:157 netbox_support_contracts/filtersets.py:66
+msgid "Integrator company (slug)"
+msgstr "Entegratör firma (kısa ad)"
+
+#: netbox_support_contracts/filtersets.py:161 netbox_support_contracts/filtersets.py:316 netbox_support_contracts/filtersets.py:69
+msgid "Maintenance company (ID)"
+msgstr "Bakım firması (ID)"
+
+#: netbox_support_contracts/filtersets.py:165 netbox_support_contracts/filtersets.py:73
+msgid "Maintenance company (slug)"
+msgstr "Bakım firması (kısa ad)"
+
+#: netbox_support_contracts/filtersets.py:168 netbox_support_contracts/filtersets.py:76 netbox_support_contracts/forms.py:64 netbox_support_contracts/tables.py:299 netbox_support_contracts/tables.py:385 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:53 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:46 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:99
 msgctxt "support contracts"
 msgid "State"
 msgstr "Durum"
 
-#: netbox_support_contracts/filtersets.py:65
+#: netbox_support_contracts/filtersets.py:82
 msgid "Covered device (ID)"
 msgstr "Kapsanan cihaz (ID)"
 
-#: netbox_support_contracts/filtersets.py:71
+#: netbox_support_contracts/filtersets.py:88
 msgid "Covered virtual machine (ID)"
 msgstr "Kapsanan sanal makine (ID)"
 
-#: netbox_support_contracts/filtersets.py:77
+#: netbox_support_contracts/filtersets.py:94
 msgid "Covered module (ID)"
 msgstr "Kapsanan modül (ID)"
 
-#: netbox_support_contracts/filtersets.py:80
+#: netbox_support_contracts/filtersets.py:97
 msgid "Ends within N days (not yet expired)"
 msgstr "N gün içinde bitenler (süresi henüz dolmamış)"
 
-#: netbox_support_contracts/filtersets.py:116
+#: netbox_support_contracts/filtersets.py:134
 msgid "Contract (ID)"
 msgstr "Sözleşme (ID)"
 
-#: netbox_support_contracts/filtersets.py:123
+#: netbox_support_contracts/filtersets.py:141
 msgid "Device (ID)"
 msgstr "Cihaz (ID)"
 
-#: netbox_support_contracts/filtersets.py:125
+#: netbox_support_contracts/filtersets.py:143
 msgid "Virtual machine (ID)"
 msgstr "Sanal makine (ID)"
 
-#: netbox_support_contracts/filtersets.py:127
+#: netbox_support_contracts/filtersets.py:145
 msgid "Module (ID)"
 msgstr "Modül (ID)"
 
-#: netbox_support_contracts/filtersets.py:129 netbox_support_contracts/filtersets.py:227
+#: netbox_support_contracts/filtersets.py:147 netbox_support_contracts/filtersets.py:301
 msgid "Site (ID)"
 msgstr "Site (ID)"
 
-#: netbox_support_contracts/filtersets.py:134 netbox_support_contracts/filtersets.py:238 netbox_support_contracts/forms.py:165 netbox_support_contracts/forms.py:207 netbox_support_contracts/forms.py:318 netbox_support_contracts/forms.py:458 netbox_support_contracts/tables.py:183 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:101 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:30
-msgid "Reseller"
-msgstr "Bayi"
-
-#: netbox_support_contracts/filtersets.py:146
+#: netbox_support_contracts/filtersets.py:178
 msgid "Covered object type"
 msgstr "Kapsanan nesne tipi"
 
-#: netbox_support_contracts/filtersets.py:183 netbox_support_contracts/filtersets.py:230
+#: netbox_support_contracts/filtersets.py:223 netbox_support_contracts/filtersets.py:304
 msgid "Device type (ID)"
 msgstr "Cihaz tipi (ID)"
 
-#: netbox_support_contracts/filtersets.py:186
+#: netbox_support_contracts/filtersets.py:226
 msgid "Module type (ID)"
 msgstr "Modül tipi (ID)"
 
-#: netbox_support_contracts/filtersets.py:192 netbox_support_contracts/forms.py:428
+#: netbox_support_contracts/filtersets.py:232 netbox_support_contracts/forms.py:562
 msgid "Support state"
 msgstr "Destek durumu"
 
-#: netbox_support_contracts/filtersets.py:223 netbox_support_contracts/forms.py:445
+#: netbox_support_contracts/filtersets.py:297 netbox_support_contracts/forms.py:579
 msgid "Search"
 msgstr "Ara"
 
-#: netbox_support_contracts/filtersets.py:225 netbox_support_contracts/forms.py:194 netbox_support_contracts/forms.py:238 netbox_support_contracts/forms.py:300 netbox_support_contracts/forms.py:467 netbox_support_contracts/navigation.py:34 netbox_support_contracts/tables.py:250 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:23 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:71
+#: netbox_support_contracts/filtersets.py:299 netbox_support_contracts/forms.py:230 netbox_support_contracts/forms.py:356 netbox_support_contracts/forms.py:428 netbox_support_contracts/forms.py:606 netbox_support_contracts/navigation.py:34 netbox_support_contracts/tables.py:446 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:23 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:75
 msgid "Coverage"
 msgstr "Kapsam"
 
-#: netbox_support_contracts/filtersets.py:228
+#: netbox_support_contracts/filtersets.py:302
 msgid "Role (ID)"
 msgstr "Rol (ID)"
 
-#: netbox_support_contracts/filtersets.py:240 netbox_support_contracts/forms.py:172 netbox_support_contracts/forms.py:192 netbox_support_contracts/forms.py:222 netbox_support_contracts/forms.py:236 netbox_support_contracts/forms.py:251 netbox_support_contracts/forms.py:287 netbox_support_contracts/forms.py:299 netbox_support_contracts/forms.py:309 netbox_support_contracts/forms.py:313 netbox_support_contracts/forms.py:442 netbox_support_contracts/forms.py:452 netbox_support_contracts/forms.py:97 netbox_support_contracts/tables.py:172 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:18
+#: netbox_support_contracts/filtersets.py:319 netbox_support_contracts/forms.py:114 netbox_support_contracts/forms.py:207 netbox_support_contracts/forms.py:227 netbox_support_contracts/forms.py:336 netbox_support_contracts/forms.py:354 netbox_support_contracts/forms.py:370 netbox_support_contracts/forms.py:410 netbox_support_contracts/forms.py:427 netbox_support_contracts/forms.py:437 netbox_support_contracts/forms.py:442 netbox_support_contracts/forms.py:576 netbox_support_contracts/forms.py:586 netbox_support_contracts/tables.py:359 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:18
 msgid "Contract"
 msgstr "Sözleşme"
 
-#: netbox_support_contracts/filtersets.py:242 netbox_support_contracts/forms.py:454
+#: netbox_support_contracts/filtersets.py:321 netbox_support_contracts/forms.py:588
 msgid "Device status"
 msgstr "Cihaz durumu"
 
-#: netbox_support_contracts/filtersets.py:244 netbox_support_contracts/forms.py:446
+#: netbox_support_contracts/filtersets.py:323 netbox_support_contracts/forms.py:580
 msgid "Coverage ends within (days)"
 msgstr "Kapsam bitişine kalan (gün)"
 
-#: netbox_support_contracts/filtersets.py:247 netbox_support_contracts/forms.py:449
+#: netbox_support_contracts/filtersets.py:326 netbox_support_contracts/forms.py:583
 msgid "Coverage ends on or before"
 msgstr "Kapsam bitişi (bu tarih veya öncesi)"
 
-#: netbox_support_contracts/filtersets.py:249 netbox_support_contracts/forms.py:447
+#: netbox_support_contracts/filtersets.py:328 netbox_support_contracts/forms.py:581
 msgid "Coverage ends on or after"
 msgstr "Kapsam bitişi (bu tarih veya sonrası)"
 
-#: netbox_support_contracts/filtersets.py:140 netbox_support_contracts/forms.py:208 netbox_support_contracts/forms.py:224 netbox_support_contracts/forms.py:260 netbox_support_contracts/forms.py:326 netbox_support_contracts/forms.py:334 netbox_support_contracts/forms.py:443 netbox_support_contracts/tables.py:176 netbox_support_contracts/tables.py:237 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:38
+#: netbox_support_contracts/filtersets.py:172 netbox_support_contracts/forms.py:249 netbox_support_contracts/forms.py:338 netbox_support_contracts/forms.py:379 netbox_support_contracts/forms.py:460 netbox_support_contracts/forms.py:468 netbox_support_contracts/forms.py:577 netbox_support_contracts/tables.py:363 netbox_support_contracts/tables.py:433 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:45
 msgid "Device"
 msgstr "Cihaz"
 
-#: netbox_support_contracts/filtersets.py:141 netbox_support_contracts/forms.py:210 netbox_support_contracts/forms.py:226 netbox_support_contracts/forms.py:264 netbox_support_contracts/forms.py:327 netbox_support_contracts/forms.py:336
+#: netbox_support_contracts/filtersets.py:173 netbox_support_contracts/forms.py:251 netbox_support_contracts/forms.py:340 netbox_support_contracts/forms.py:383 netbox_support_contracts/forms.py:461 netbox_support_contracts/forms.py:470
 msgid "Virtual machine"
 msgstr "Sanal makine"
 
-#: netbox_support_contracts/filtersets.py:142 netbox_support_contracts/forms.py:229 netbox_support_contracts/forms.py:268 netbox_support_contracts/forms.py:328 netbox_support_contracts/forms.py:338 netbox_support_contracts/tables.py:181 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:52
+#: netbox_support_contracts/filtersets.py:174 netbox_support_contracts/forms.py:343 netbox_support_contracts/forms.py:387 netbox_support_contracts/forms.py:462 netbox_support_contracts/forms.py:472 netbox_support_contracts/tables.py:368 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:59
 msgid "Module"
 msgstr "Modül"
 
-#: netbox_support_contracts/filtersets.py:143 netbox_support_contracts/forms.py:329
+#: netbox_support_contracts/filtersets.py:175 netbox_support_contracts/forms.py:463
 msgid "Contract-level (SKU only)"
 msgstr "Sözleşme düzeyi (yalnızca SKU)"
 
-#: netbox_support_contracts/forms.py:56 netbox_support_contracts/tables.py:121 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:75 netbox_support_contracts/templates/netbox_support_contracts/widgets/coverage_summary.html:28
+#: netbox_support_contracts/forms.py:65 netbox_support_contracts/tables.py:38 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:79 netbox_support_contracts/templates/netbox_support_contracts/widgets/coverage_summary.html:28
 msgctxt "support contracts"
 msgid "Devices"
 msgstr "Cihazlar"
 
-#: netbox_support_contracts/forms.py:57 netbox_support_contracts/navigation.py:49
+#: netbox_support_contracts/forms.py:66 netbox_support_contracts/navigation.py:54
 msgctxt "support contracts"
 msgid "Lifecycle"
 msgstr "Yaşam Döngüsü"
 
-#: netbox_support_contracts/forms.py:59
+#: netbox_support_contracts/forms.py:68
 #, python-brace-format
 msgid "3-letter ISO 4217 code, e.g. {examples}"
 msgstr "3 harfli ISO 4217 kodu, örn. {examples}"
 
-#: netbox_support_contracts/forms.py:123 netbox_support_contracts/forms.py:157 netbox_support_contracts/forms.py:199 netbox_support_contracts/forms.py:257 netbox_support_contracts/forms.py:320 netbox_support_contracts/forms.py:375 netbox_support_contracts/forms.py:418 netbox_support_contracts/forms.py:470 netbox_support_contracts/forms.py:90 netbox_support_contracts/tables.py:112 netbox_support_contracts/tables.py:174 netbox_support_contracts/tables.py:212 netbox_support_contracts/tables.py:241 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:13 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:47 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:26 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:22 netbox_support_contracts/templates/netbox_support_contracts/widgets/coverage_summary.html:27
+#: netbox_support_contracts/forms.py:141 netbox_support_contracts/forms.py:185 netbox_support_contracts/forms.py:235 netbox_support_contracts/forms.py:376 netbox_support_contracts/forms.py:454 netbox_support_contracts/forms.py:509 netbox_support_contracts/forms.py:552 netbox_support_contracts/forms.py:609 netbox_support_contracts/forms.py:99 netbox_support_contracts/tables.py:295 netbox_support_contracts/tables.py:361 netbox_support_contracts/tables.py:408 netbox_support_contracts/tables.py:437 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:13 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:47 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:30 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:22 netbox_support_contracts/templates/netbox_support_contracts/widgets/coverage_summary.html:27
 msgid "Manufacturer"
 msgstr "Üretici"
 
-#: netbox_support_contracts/forms.py:167 netbox_support_contracts/forms.py:92
+#: netbox_support_contracts/forms.py:102 netbox_support_contracts/forms.py:148 netbox_support_contracts/forms.py:194 netbox_support_contracts/forms.py:244 netbox_support_contracts/forms.py:349 netbox_support_contracts/forms.py:391 netbox_support_contracts/forms.py:419 netbox_support_contracts/forms.py:448 netbox_support_contracts/forms.py:593 netbox_support_contracts/forms.py:664
+msgid "Integrator company"
+msgstr "Entegratör firma"
+
+#: netbox_support_contracts/forms.py:106 netbox_support_contracts/forms.py:152 netbox_support_contracts/forms.py:198 netbox_support_contracts/forms.py:247 netbox_support_contracts/forms.py:451 netbox_support_contracts/forms.py:596
+msgid "Maintenance company"
+msgstr "Bakım firması"
+
+#: netbox_support_contracts/forms.py:109 netbox_support_contracts/forms.py:202
 msgid "Currency"
 msgstr "Para Birimi"
 
-#: netbox_support_contracts/forms.py:126
+#: netbox_support_contracts/forms.py:145
 msgid "Manufacturer name"
 msgstr "Üretici adı"
 
-#: netbox_support_contracts/forms.py:132 netbox_support_contracts/forms.py:169 netbox_support_contracts/forms.py:212 netbox_support_contracts/tables.py:113 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:58
+#: netbox_support_contracts/forms.py:149 netbox_support_contracts/forms.py:392
+msgid "Integrator company name"
+msgstr "Entegratör firma adı"
+
+#: netbox_support_contracts/forms.py:153
+msgid "Maintenance company name"
+msgstr "Bakım firması adı"
+
+#: netbox_support_contracts/forms.py:159 netbox_support_contracts/forms.py:204 netbox_support_contracts/forms.py:253 netbox_support_contracts/tables.py:298 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:62
 msgid "Tenant"
 msgstr "Kiracı (Tenant)"
 
-#: netbox_support_contracts/forms.py:136
+#: netbox_support_contracts/forms.py:163
 msgid "Assigned tenant name"
 msgstr "Atanan kiracı adı"
 
-#: netbox_support_contracts/forms.py:162 netbox_support_contracts/forms.py:206
+#: netbox_support_contracts/forms.py:190 netbox_support_contracts/forms.py:242
 msgid "Service level"
 msgstr "Hizmet seviyesi"
 
-#: netbox_support_contracts/forms.py:163
+#: netbox_support_contracts/forms.py:191
 msgid "Start date"
 msgstr "Başlangıç tarihi"
 
-#: netbox_support_contracts/forms.py:164
+#: netbox_support_contracts/forms.py:192
 msgid "End date"
 msgstr "Bitiş tarihi"
 
-#: netbox_support_contracts/forms.py:166 netbox_support_contracts/tables.py:139 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:116
+#: netbox_support_contracts/forms.py:201 netbox_support_contracts/tables.py:324 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:124
 msgid "Cost"
 msgstr "Maliyet"
 
-#: netbox_support_contracts/forms.py:168 netbox_support_contracts/models.py:88 netbox_support_contracts/tables.py:138 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:105
+#: netbox_support_contracts/forms.py:203 netbox_support_contracts/models.py:140 netbox_support_contracts/tables.py:323 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:113
 msgid "Vendor Portal URL"
 msgstr "Üretici Portalı URL'si"
 
-#: netbox_support_contracts/forms.py:205
+#: netbox_support_contracts/forms.py:241
 msgid "Ends within (days)"
 msgstr "Bitişe kalan (gün)"
 
-#: netbox_support_contracts/forms.py:254
+#: netbox_support_contracts/forms.py:298
+msgctxt "support contracts"
+msgid "Contact name"
+msgstr "İletişim kişisi"
+
+#: netbox_support_contracts/forms.py:300
+msgctxt "support contracts"
+msgid "Contact email"
+msgstr "İletişim e-postası"
+
+#: netbox_support_contracts/forms.py:302
+msgctxt "support contracts"
+msgid "Contact phone"
+msgstr "İletişim telefonu"
+
+#: netbox_support_contracts/forms.py:304 netbox_support_contracts/tables.py:247 netbox_support_contracts/views.py:290
+msgid "Website / Portal URL"
+msgstr "Web Sitesi / Portal URL'si"
+
+#: netbox_support_contracts/forms.py:312
+msgid "Support phone"
+msgstr "Destek telefonu"
+
+#: netbox_support_contracts/forms.py:313
+msgid "Support portal URL"
+msgstr "Destek portalı URL'si"
+
+#: netbox_support_contracts/forms.py:373
 msgid "Contract number (add the manufacturer column when numbers repeat across vendors)"
 msgstr "Sözleşme numarası (numaralar üreticiler arasında tekrarlanıyorsa üretici sütununu ekleyin)"
 
-#: netbox_support_contracts/forms.py:257
+#: netbox_support_contracts/forms.py:376
 msgid "Contract manufacturer name (optional disambiguation)"
 msgstr "Sözleşme üreticisinin adı (isteğe bağlı ayırt edici)"
 
-#: netbox_support_contracts/forms.py:261
+#: netbox_support_contracts/forms.py:380
 msgid "Device name"
 msgstr "Cihaz adı"
 
-#: netbox_support_contracts/forms.py:265
+#: netbox_support_contracts/forms.py:384
 msgid "Virtual machine name"
 msgstr "Sanal makine adı"
 
-#: netbox_support_contracts/forms.py:269
+#: netbox_support_contracts/forms.py:388
 msgid "Module serial number"
 msgstr "Modül seri numarası"
 
-#: netbox_support_contracts/forms.py:291
+#: netbox_support_contracts/forms.py:414
 msgid "Move selected coverage items to another contract (e.g. when switching annual support provider)."
 msgstr "Seçilen kapsam kayıtlarını başka bir sözleşmeye taşıyın (örn. yıllık destek sağlayıcı değiştiğinde)."
 
-#: netbox_support_contracts/forms.py:293 netbox_support_contracts/forms.py:517
+#: netbox_support_contracts/forms.py:416 netbox_support_contracts/forms.py:656
+msgid "Start date override"
+msgstr "Başlangıç tarihi (özel)"
+
+#: netbox_support_contracts/forms.py:417 netbox_support_contracts/forms.py:660
 msgid "End date override"
 msgstr "Bitiş tarihi (özel)"
 
-#: netbox_support_contracts/forms.py:294 netbox_support_contracts/forms.py:511 netbox_support_contracts/models.py:189 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:56
+#: netbox_support_contracts/forms.py:422 netbox_support_contracts/forms.py:650 netbox_support_contracts/models.py:272 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:63
 msgid "SKU / License Part Number"
 msgstr "SKU / Lisans Parça Numarası"
 
-#: netbox_support_contracts/forms.py:295 netbox_support_contracts/forms.py:513 netbox_support_contracts/tables.py:185 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:60
+#: netbox_support_contracts/forms.py:423 netbox_support_contracts/forms.py:652 netbox_support_contracts/tables.py:377 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:67
 msgid "Quantity"
 msgstr "Adet / Miktar"
 
-#: netbox_support_contracts/forms.py:296 netbox_support_contracts/forms.py:520 netbox_support_contracts/tables.py:193 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:64
+#: netbox_support_contracts/forms.py:424 netbox_support_contracts/forms.py:667 netbox_support_contracts/tables.py:387 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:71
 msgid "Notes"
 msgstr "Notlar"
 
-#: netbox_support_contracts/forms.py:332
+#: netbox_support_contracts/forms.py:466
 msgid "Object type"
 msgstr "Nesne tipi"
 
-#: netbox_support_contracts/forms.py:339 netbox_support_contracts/forms.py:475 netbox_support_contracts/forms.py:492 netbox_support_contracts/tables.py:179 netbox_support_contracts/tables.py:247
+#: netbox_support_contracts/forms.py:473 netbox_support_contracts/forms.py:614 netbox_support_contracts/forms.py:631 netbox_support_contracts/tables.py:366 netbox_support_contracts/tables.py:443
 msgid "Site"
 msgstr "Site"
 
-#: netbox_support_contracts/forms.py:349 netbox_support_contracts/forms.py:378 netbox_support_contracts/forms.py:422 netbox_support_contracts/forms.py:473 netbox_support_contracts/forms.py:496
+#: netbox_support_contracts/forms.py:483 netbox_support_contracts/forms.py:512 netbox_support_contracts/forms.py:556 netbox_support_contracts/forms.py:612 netbox_support_contracts/forms.py:635
 msgid "Device type"
 msgstr "Cihaz tipi"
 
-#: netbox_support_contracts/forms.py:352 netbox_support_contracts/forms.py:382 netbox_support_contracts/forms.py:426
+#: netbox_support_contracts/forms.py:486 netbox_support_contracts/forms.py:516 netbox_support_contracts/forms.py:560
 msgid "Module type"
 msgstr "Modül tipi"
 
-#: netbox_support_contracts/forms.py:375
+#: netbox_support_contracts/forms.py:509
 msgid "Manufacturer name (disambiguates the type model)"
 msgstr "Üretici adı (tip modelini ayırt eder)"
 
-#: netbox_support_contracts/forms.py:379
+#: netbox_support_contracts/forms.py:513
 msgid "Device type model name"
 msgstr "Cihaz tipi model adı"
 
-#: netbox_support_contracts/forms.py:383
+#: netbox_support_contracts/forms.py:517
 msgid "Module type model name"
 msgstr "Modül tipi model adı"
 
-#: netbox_support_contracts/forms.py:401
+#: netbox_support_contracts/forms.py:535
 msgid "End of sale"
 msgstr "Satış sonu"
 
-#: netbox_support_contracts/forms.py:402
+#: netbox_support_contracts/forms.py:536
 msgid "End of maintenance"
 msgstr "Bakım sonu"
 
-#: netbox_support_contracts/forms.py:403
+#: netbox_support_contracts/forms.py:537
 msgid "End of support"
 msgstr "Destek sonu"
 
-#: netbox_support_contracts/forms.py:404 netbox_support_contracts/tables.py:218
+#: netbox_support_contracts/forms.py:538 netbox_support_contracts/tables.py:414
 msgid "Notice URL"
 msgstr "Duyuru URL'si"
 
-#: netbox_support_contracts/forms.py:476 netbox_support_contracts/forms.py:498 netbox_support_contracts/tables.py:248
+#: netbox_support_contracts/forms.py:615 netbox_support_contracts/forms.py:637 netbox_support_contracts/tables.py:444
 msgid "Role"
 msgstr "Rol"
 
-#: netbox_support_contracts/forms.py:488
+#: netbox_support_contracts/forms.py:627
 msgid "Virtual machines"
 msgstr "Sanal makineler"
 
-#: netbox_support_contracts/forms.py:490 netbox_support_contracts/tables.py:131 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:83
+#: netbox_support_contracts/forms.py:629 netbox_support_contracts/tables.py:316 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:87
 msgid "Modules"
 msgstr "Modüller"
 
-#: netbox_support_contracts/forms.py:493
+#: netbox_support_contracts/forms.py:632
 msgid "Cover every device matching all of the selected site / device type / role filters"
 msgstr "Seçilen site / cihaz tipi / rol filtrelerinin tümüne uyan her cihazı kapsama al"
 
-#: netbox_support_contracts/forms.py:500
+#: netbox_support_contracts/forms.py:639
 msgid "Serial numbers"
 msgstr "Seri numaraları"
 
-#: netbox_support_contracts/forms.py:514 netbox_support_contracts/models.py:194
+#: netbox_support_contracts/forms.py:653 netbox_support_contracts/models.py:277
 msgid "License count, seats, sockets, or covered units (optional)."
 msgstr "Lisans adedi, kullanıcı, soket veya kapsanan birim sayısı (isteğe bağlı)."
 
-#: netbox_support_contracts/forms.py:518
+#: netbox_support_contracts/forms.py:657
+msgid "Leave blank to follow the contract start date"
+msgstr "Sözleşme başlangıç tarihini kullanmak için boş bırakın"
+
+#: netbox_support_contracts/forms.py:661
 msgid "Leave blank to follow the contract end date"
 msgstr "Sözleşme bitiş tarihini kullanmak için boş bırakın"
 
-#: netbox_support_contracts/forms.py:173 netbox_support_contracts/forms.py:99 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:75
+#: netbox_support_contracts/forms.py:665
+msgid "Leave blank to follow the contract integrator"
+msgstr "Sözleşmedeki entegratör firmayı kullanmak için boş bırakın"
+
+#: netbox_support_contracts/forms.py:116 netbox_support_contracts/forms.py:208 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:82
 msgid "Term"
 msgstr "Süre"
 
-#: netbox_support_contracts/forms.py:100 netbox_support_contracts/forms.py:174 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:98
+#: netbox_support_contracts/forms.py:117 netbox_support_contracts/forms.py:209 netbox_support_contracts/forms.py:229 netbox_support_contracts/forms.py:438 netbox_support_contracts/navigation.py:53
+msgid "Partners & Providers"
+msgstr "Firmalar ve Sağlayıcılar"
+
+#: netbox_support_contracts/forms.py:118 netbox_support_contracts/forms.py:210 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:102
 msgid "Commercial"
 msgstr "Ticari Bilgiler"
 
-#: netbox_support_contracts/forms.py:101 netbox_support_contracts/forms.py:175 netbox_support_contracts/forms.py:195
+#: netbox_support_contracts/forms.py:119 netbox_support_contracts/forms.py:211 netbox_support_contracts/forms.py:231
 msgid "Tenancy"
 msgstr "Kiracılık"
 
-#: netbox_support_contracts/forms.py:196 netbox_support_contracts/forms.py:415
+#: netbox_support_contracts/forms.py:232 netbox_support_contracts/forms.py:320 netbox_support_contracts/forms.py:549
 msgid "Ownership"
 msgstr "Sahiplik"
 
-#: netbox_support_contracts/forms.py:237 netbox_support_contracts/forms.py:310
+#: netbox_support_contracts/forms.py:268
+msgid "Company"
+msgstr "Firma"
+
+#: netbox_support_contracts/forms.py:269
+msgid "Contact"
+msgstr "İletişim"
+
+#: netbox_support_contracts/forms.py:355 netbox_support_contracts/forms.py:439
 msgid "Covered object"
 msgstr "Kapsanan nesne"
 
-#: netbox_support_contracts/forms.py:356 netbox_support_contracts/forms.py:414 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:10
+#: netbox_support_contracts/forms.py:490 netbox_support_contracts/forms.py:548 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:10
 msgid "Hardware"
 msgstr "Donanım"
 
-#: netbox_support_contracts/forms.py:440
+#: netbox_support_contracts/forms.py:574
 msgid "Coverage end window"
 msgstr "Kapsam bitiş aralığı"
 
-#: netbox_support_contracts/forms.py:504
+#: netbox_support_contracts/forms.py:643
 #, python-brace-format
 msgid "Paste up to {max} serial numbers separated by newlines, commas, semicolons, or spaces (e.g. straight from a spreadsheet column, invoice, or vendor quote). Matching is case-insensitive."
 msgstr "Satır sonu, virgül, noktalı virgül veya boşlukla ayrılmış en fazla {max} seri numarası yapıştırın (örn. doğrudan bir tablo sütunundan, faturadan veya üretici teklifinden). Eşleştirmede büyük/küçük harf ayrımı yapılmaz."
 
-#: netbox_support_contracts/forms.py:523
+#: netbox_support_contracts/forms.py:670
 msgid "Option A: Pick existing objects"
 msgstr "Seçenek A: Mevcut nesneleri seçin"
 
-#: netbox_support_contracts/forms.py:524
+#: netbox_support_contracts/forms.py:671
 msgid "…or cover all matching devices"
 msgstr "…veya eşleşen tüm cihazları kapsama alın"
 
-#: netbox_support_contracts/forms.py:525
+#: netbox_support_contracts/forms.py:672
 msgid "Option B: Paste serial numbers"
 msgstr "Seçenek B: Seri numaralarını yapıştırın"
 
-#: netbox_support_contracts/forms.py:526
+#: netbox_support_contracts/forms.py:675
 msgid "Applied to each new coverage row"
 msgstr "Her yeni kapsam satırına uygulanır"
 
-#: netbox_support_contracts/forms.py:546
+#: netbox_support_contracts/forms.py:696
 msgid "Pick at least one object, choose a site / device type / role filter, or paste serial numbers."
 msgstr "En az bir nesne seçin, bir site / cihaz tipi / rol filtresi belirleyin veya seri numaralarını yapıştırın."
 
-#: netbox_support_contracts/forms.py:535
+#: netbox_support_contracts/forms.py:685
 #, python-brace-format
 msgid "At most {max} serial numbers can be processed at once ({count} given)."
 msgstr "Tek seferde en fazla {max} seri numarası işlenebilir ({count} adet girildi)."
@@ -464,207 +543,283 @@ msgstr "Destek sözleşmesinin süresi doldu"
 msgid "Enter a 3-letter ISO 4217 currency code (e.g. USD, EUR, TRY)."
 msgstr "3 harfli bir ISO 4217 para birimi kodu girin (örn. USD, EUR, TRY)."
 
-#: netbox_support_contracts/models.py:108
+#: netbox_support_contracts/models.py:118 netbox_support_contracts/models.py:267 netbox_support_contracts/models.py:42
+msgid "integrator company"
+msgstr "entegratör firma"
+
+#: netbox_support_contracts/models.py:43
+msgid "integrator companies"
+msgstr "entegratör firmalar"
+
+#: netbox_support_contracts/models.py:127 netbox_support_contracts/models.py:53
+msgid "maintenance company"
+msgstr "bakım firması"
+
+#: netbox_support_contracts/models.py:54
+msgid "maintenance companies"
+msgstr "bakım firmaları"
+
+#: netbox_support_contracts/models.py:160
 msgid "support contract"
 msgstr "destek sözleşmesi"
 
-#: netbox_support_contracts/models.py:109
+#: netbox_support_contracts/models.py:161
 msgid "support contracts"
 msgstr "destek sözleşmeleri"
 
-#: netbox_support_contracts/models.py:202 netbox_support_contracts/models.py:203
+#: netbox_support_contracts/models.py:285 netbox_support_contracts/models.py:286
 msgid "support coverage"
 msgstr "destek kapsamı"
 
-#: netbox_support_contracts/models.py:305 netbox_support_contracts/models.py:306
+#: netbox_support_contracts/models.py:404 netbox_support_contracts/models.py:405
 msgid "hardware lifecycle (EoL)"
 msgstr "donanım yaşam döngüsü (EoL)"
 
+#: netbox_support_contracts/models.py:22
+msgid "name"
+msgstr "ad"
+
+#: netbox_support_contracts/models.py:23
+msgid "slug"
+msgstr "kısa ad"
+
+#: netbox_support_contracts/models.py:24
+msgid "contact name"
+msgstr "iletişim kişisi"
+
+#: netbox_support_contracts/models.py:25
+msgid "contact email"
+msgstr "iletişim e-postası"
+
+#: netbox_support_contracts/models.py:38
+msgid "contact phone"
+msgstr "iletişim telefonu"
+
+#: netbox_support_contracts/models.py:39
+msgid "website / portal URL"
+msgstr "web sitesi / portal URL'si"
+
+#: netbox_support_contracts/models.py:49
+msgid "support phone"
+msgstr "destek telefonu"
+
 #: netbox_support_contracts/models.py:50
+msgid "support portal URL"
+msgstr "destek portalı URL'si"
+
+#: netbox_support_contracts/models.py:88
 msgid "manufacturer"
 msgstr "üretici"
 
-#: netbox_support_contracts/models.py:52
+#: netbox_support_contracts/models.py:91
+msgid "Hardware/software vendor. Optional for multi-vendor third-party maintenance contracts."
+msgstr "Donanım/yazılım üreticisi. Çok üreticili 3. parti bakım sözleşmelerinde isteğe bağlıdır."
+
+#: netbox_support_contracts/models.py:93
 msgid "contract number"
 msgstr "sözleşme numarası"
 
-#: netbox_support_contracts/models.py:54
+#: netbox_support_contracts/models.py:95
 msgid "contract type"
 msgstr "sözleşme türü"
 
-#: netbox_support_contracts/models.py:60
+#: netbox_support_contracts/models.py:101
 msgid "service level"
 msgstr "hizmet seviyesi"
 
-#: netbox_support_contracts/models.py:64
+#: netbox_support_contracts/models.py:105
 msgid "e.g., 8x5xNBD, 24x7x4, Onsite NBD"
 msgstr "örn. 8x5xNBD, 24x7x4, Yerinde NBD"
 
-#: netbox_support_contracts/models.py:66
+#: netbox_support_contracts/models.py:107 netbox_support_contracts/models.py:252
 msgid "start date"
 msgstr "başlangıç tarihi"
 
-#: netbox_support_contracts/models.py:184 netbox_support_contracts/models.py:68
+#: netbox_support_contracts/models.py:109 netbox_support_contracts/models.py:258
 msgid "end date"
 msgstr "bitiş tarihi"
 
-#: netbox_support_contracts/models.py:71
+#: netbox_support_contracts/models.py:112
 msgid "Last covered day. Leave blank for open-ended."
 msgstr "Kapsamın son günü. Süresiz sözleşmeler için boş bırakın."
 
-#: netbox_support_contracts/models.py:74
-msgid "reseller"
-msgstr "bayi"
+#: netbox_support_contracts/models.py:121
+msgid "Seller / system integrator through which the hardware or contract was purchased."
+msgstr "Donanımın veya sözleşmenin satın alındığı satıcı / sistem entegratörü."
 
-#: netbox_support_contracts/models.py:78
-msgid "Reseller, partner, or contractor"
-msgstr "Bayi, iş ortağı veya yüklenici"
+#: netbox_support_contracts/models.py:130
+msgid "Third-party maintenance company providing support and spare parts."
+msgstr "Destek ve yedek parça sağlayan 3. parti bakım firması."
 
-#: netbox_support_contracts/models.py:80
+#: netbox_support_contracts/models.py:132
 msgid "cost"
 msgstr "maliyet"
 
-#: netbox_support_contracts/models.py:82
+#: netbox_support_contracts/models.py:134
 msgid "currency"
 msgstr "para birimi"
 
-#: netbox_support_contracts/models.py:89
+#: netbox_support_contracts/models.py:141
 msgid "renewal notes"
 msgstr "yenileme notları"
 
-#: netbox_support_contracts/models.py:96
+#: netbox_support_contracts/models.py:148
 msgid "tenant"
 msgstr "kiracı"
 
-#: netbox_support_contracts/models.py:157
+#: netbox_support_contracts/models.py:194
+msgid "Select a manufacturer, a maintenance company, or both."
+msgstr "Bir üretici, bir bakım firması veya her ikisini seçin."
+
+#: netbox_support_contracts/models.py:225
 msgid "contract"
 msgstr "sözleşme"
 
-#: netbox_support_contracts/models.py:165
+#: netbox_support_contracts/models.py:233
 msgid "device"
 msgstr "cihaz"
 
-#: netbox_support_contracts/models.py:173
+#: netbox_support_contracts/models.py:241
 msgid "virtual machine"
 msgstr "sanal makine"
 
-#: netbox_support_contracts/models.py:181
+#: netbox_support_contracts/models.py:249
 msgid "module"
 msgstr "modül"
 
-#: netbox_support_contracts/models.py:187
+#: netbox_support_contracts/models.py:255
+msgid "Optional override start date for this specific item (defaults to contract start date)."
+msgstr "Bu öğeye özel isteğe bağlı başlangıç tarihi (varsayılan olarak sözleşme başlangıç tarihi kullanılır)."
+
+#: netbox_support_contracts/models.py:261
 msgid "Optional override end date for this specific item (defaults to contract end date)."
 msgstr "Bu öğeye özel isteğe bağlı bitiş tarihi (varsayılan olarak sözleşme bitiş tarihi kullanılır)."
 
-#: netbox_support_contracts/models.py:191
+#: netbox_support_contracts/models.py:270
+msgid "Optional override integrator / seller for this specific item (defaults to contract integrator)."
+msgstr "Bu öğeye özel isteğe bağlı entegratör / satıcı (varsayılan olarak sözleşmedeki entegratör kullanılır)."
+
+#: netbox_support_contracts/models.py:274
 msgid "quantity"
 msgstr "adet / miktar"
 
-#: netbox_support_contracts/models.py:196
+#: netbox_support_contracts/models.py:279
 msgid "notes"
 msgstr "notlar"
 
-#: netbox_support_contracts/models.py:242
+#: netbox_support_contracts/models.py:325
 msgid "contract-level entry"
 msgstr "sözleşme düzeyi kayıt"
 
-#: netbox_support_contracts/models.py:260
+#: netbox_support_contracts/models.py:355
 msgid "Select only one of device, virtual machine, or module."
 msgstr "Cihaz, sanal makine veya modülden yalnızca birini seçin."
 
-#: netbox_support_contracts/models.py:288
+#: netbox_support_contracts/models.py:387
 msgid "device type"
 msgstr "cihaz tipi"
 
-#: netbox_support_contracts/models.py:296
+#: netbox_support_contracts/models.py:395
 msgid "module type"
 msgstr "modül tipi"
 
-#: netbox_support_contracts/models.py:298
+#: netbox_support_contracts/models.py:397
 msgid "end of sale"
 msgstr "satış sonu"
 
-#: netbox_support_contracts/models.py:299
+#: netbox_support_contracts/models.py:398
 msgid "end of maintenance"
 msgstr "bakım sonu"
 
-#: netbox_support_contracts/models.py:300
+#: netbox_support_contracts/models.py:399
 msgid "end of support"
 msgstr "destek sonu"
 
-#: netbox_support_contracts/models.py:301
+#: netbox_support_contracts/models.py:400
 msgid "notice URL"
 msgstr "duyuru URL'si"
 
-#: netbox_support_contracts/models.py:314 netbox_support_contracts/models.py:335
+#: netbox_support_contracts/models.py:413 netbox_support_contracts/models.py:434
 msgid "Select exactly one of device type or module type."
 msgstr "Cihaz tipi veya modül tipinden yalnızca birini seçin."
 
-#: netbox_support_contracts/models.py:119
+#: netbox_support_contracts/models.py:179
 msgid "Can view and edit contract commercial cost"
 msgstr "Sözleşme maliyetini görüntüleyebilir ve düzenleyebilir"
 
-#: netbox_support_contracts/models.py:319
+#: netbox_support_contracts/models.py:418
 msgid "Hardware lifecycle"
 msgstr "Donanım yaşam döngüsü"
 
-#: netbox_support_contracts/models.py:115
+#: netbox_support_contracts/models.py:168
 msgid "This manufacturer already has a contract with this number."
 msgstr "Bu üreticinin bu numaraya sahip bir sözleşmesi zaten var."
 
-#: netbox_support_contracts/models.py:134
+#: netbox_support_contracts/models.py:175
+msgid "This maintenance company already has a contract with this number."
+msgstr "Bu bakım firmasının bu numaraya sahip bir sözleşmesi zaten var."
+
+#: netbox_support_contracts/models.py:197 netbox_support_contracts/models.py:366
 msgid "End date cannot be earlier than start date."
 msgstr "Bitiş tarihi başlangıç tarihinden önce olamaz."
 
-#: netbox_support_contracts/models.py:137
+#: netbox_support_contracts/models.py:200
 msgid "Specify a 3-letter currency code (e.g. USD, EUR, TRY) when cost is set."
 msgstr "Maliyet girildiğinde 3 harfli bir para birimi kodu belirtin (örn. USD, EUR, TRY)."
 
-#: netbox_support_contracts/models.py:209
+#: netbox_support_contracts/models.py:292
 msgid "This device is already covered by this contract."
 msgstr "Bu cihaz zaten bu sözleşmenin kapsamında."
 
-#: netbox_support_contracts/models.py:215
+#: netbox_support_contracts/models.py:298
 msgid "This virtual machine is already covered by this contract."
 msgstr "Bu sanal makine zaten bu sözleşmenin kapsamında."
 
-#: netbox_support_contracts/models.py:221
+#: netbox_support_contracts/models.py:304
 msgid "This module is already covered by this contract."
 msgstr "Bu modül zaten bu sözleşmenin kapsamında."
 
-#: netbox_support_contracts/models.py:230
+#: netbox_support_contracts/models.py:313
 msgid "Coverage may reference only one device, virtual machine, or module."
 msgstr "Kapsam yalnızca bir cihaz, sanal makine veya modüle bağlanabilir."
 
-#: netbox_support_contracts/models.py:237
+#: netbox_support_contracts/models.py:320
 msgid "Coverage requires a device, virtual machine, module, or SKU."
 msgstr "Kapsam için bir cihaz, sanal makine, modül veya SKU gereklidir."
 
-#: netbox_support_contracts/models.py:264
+#: netbox_support_contracts/models.py:359
 msgid "Select a device, virtual machine, or module (or enter a SKU for a contract-level license)."
 msgstr "Bir cihaz, sanal makine veya modül seçin (ya da sözleşme düzeyinde bir lisans için SKU girin)."
 
-#: netbox_support_contracts/models.py:275
+#: netbox_support_contracts/models.py:374
 #, python-brace-format
 msgid "{object} is already covered by contract {contract}."
 msgstr "{object} zaten {contract} sözleşmesinin kapsamında."
 
-#: netbox_support_contracts/models.py:346
+#: netbox_support_contracts/models.py:445
 #, python-brace-format
 msgid "{later} cannot be earlier than {earlier}."
 msgstr "{later}, {earlier} tarihinden önce olamaz."
 
-#: netbox_support_contracts/navigation.py:33 netbox_support_contracts/navigation.py:45
+#: netbox_support_contracts/navigation.py:33 netbox_support_contracts/navigation.py:49 netbox_support_contracts/views.py:314
 msgid "Support Contracts"
 msgstr "Destek Sözleşmeleri"
 
-#: netbox_support_contracts/navigation.py:41
+#: netbox_support_contracts/navigation.py:42
+msgid "Integrator Companies"
+msgstr "Entegratör Firmalar"
+
+#: netbox_support_contracts/navigation.py:43
+msgid "Maintenance Companies"
+msgstr "Bakım Firmaları"
+
+#: netbox_support_contracts/navigation.py:45
 msgid "Hardware EoL"
-msgstr "Donanım Yaşam Döngüsü / EoL"
+msgstr "Donanım EoL"
 
 #: netbox_support_contracts/navigation.py:37 netbox_support_contracts/templates/netbox_support_contracts/device_coverage.html:4
 msgid "Device Coverage"
-msgstr "Cihaz Kapsam Raporu"
+msgstr "Cihaz Kapsamı"
 
 #: netbox_support_contracts/navigation.py:13
 msgid "Add"
@@ -674,258 +829,302 @@ msgstr "Ekle"
 msgid "Import"
 msgstr "İçe Aktar"
 
-#: netbox_support_contracts/navigation.py:48 netbox_support_contracts/tables.py:269
+#: netbox_support_contracts/navigation.py:52 netbox_support_contracts/tables.py:251 netbox_support_contracts/tables.py:279 netbox_support_contracts/tables.py:465 netbox_support_contracts/views.py:303
 msgid "Contracts"
 msgstr "Sözleşmeler"
 
-#: netbox_support_contracts/services.py:123 netbox_support_contracts/services.py:581 netbox_support_contracts/tables.py:294 netbox_support_contracts/tables.py:364 netbox_support_contracts/tables.py:99 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:30 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:64 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:51 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:84
+#: netbox_support_contracts/services.py:127 netbox_support_contracts/services.py:663 netbox_support_contracts/tables.py:106 netbox_support_contracts/tables.py:167 netbox_support_contracts/tables.py:492 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:30 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:66 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:55 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:94
 msgid "Open-ended"
 msgstr "Süresiz"
 
-#: netbox_support_contracts/services.py:127
+#: netbox_support_contracts/services.py:131
 msgid "Ends today"
 msgstr "Bugün bitiyor"
 
-#: netbox_support_contracts/services.py:128
+#: netbox_support_contracts/services.py:132
 #, python-format
 msgid "%(n)d day left"
 msgid_plural "%(n)d days left"
 msgstr[0] "%(n)d gün kaldı"
 msgstr[1] "%(n)d gün kaldı"
 
-#: netbox_support_contracts/services.py:524
+#: netbox_support_contracts/services.py:603
 msgctxt "provider export"
 msgid "Manufacturer"
 msgstr "Üretici"
 
-#: netbox_support_contracts/services.py:525
+#: netbox_support_contracts/services.py:604
 msgctxt "provider export"
 msgid "Device Type"
 msgstr "Cihaz Türü / Model"
 
-#: netbox_support_contracts/services.py:526
+#: netbox_support_contracts/services.py:605
 msgctxt "provider export"
 msgid "Part Number"
 msgstr "Parça Numarası"
 
-#: netbox_support_contracts/services.py:527
+#: netbox_support_contracts/services.py:606
 msgctxt "provider export"
 msgid "Model Device Count"
 msgstr "Model Toplam Cihaz Adedi"
 
-#: netbox_support_contracts/services.py:528
+#: netbox_support_contracts/services.py:607
 msgctxt "provider export"
 msgid "Device"
 msgstr "Cihaz Adı"
 
-#: netbox_support_contracts/services.py:529
+#: netbox_support_contracts/services.py:608
 msgctxt "provider export"
 msgid "Serial Number"
 msgstr "Seri Numarası"
 
-#: netbox_support_contracts/services.py:530
+#: netbox_support_contracts/services.py:609
 msgctxt "provider export"
 msgid "Asset Tag"
 msgstr "Demirbaş No"
 
-#: netbox_support_contracts/services.py:531
+#: netbox_support_contracts/services.py:610
 msgctxt "provider export"
 msgid "Site"
 msgstr "Lokasyon / Saha"
 
-#: netbox_support_contracts/services.py:532
+#: netbox_support_contracts/services.py:611
 msgctxt "provider export"
 msgid "Rack"
 msgstr "Kabinet"
 
-#: netbox_support_contracts/services.py:533
+#: netbox_support_contracts/services.py:612
 msgctxt "provider export"
 msgid "Role"
 msgstr "Rol"
 
-#: netbox_support_contracts/services.py:534
+#: netbox_support_contracts/services.py:613
 msgctxt "provider export"
 msgid "Device Status"
 msgstr "Cihaz Durumu"
 
-#: netbox_support_contracts/services.py:535
+#: netbox_support_contracts/services.py:614
 msgctxt "provider export"
 msgid "Coverage Status"
 msgstr "Kapsam Durumu"
 
-#: netbox_support_contracts/services.py:536
+#: netbox_support_contracts/services.py:615
 msgctxt "provider export"
 msgid "Current Contract"
 msgstr "Mevcut Sözleşme No"
 
-#: netbox_support_contracts/services.py:537
+#: netbox_support_contracts/services.py:616
 msgctxt "provider export"
 msgid "Current Contract Type"
 msgstr "Mevcut Sözleşme Türü"
 
-#: netbox_support_contracts/services.py:538
+#: netbox_support_contracts/services.py:617
 msgctxt "provider export"
-msgid "Current Reseller"
-msgstr "Mevcut Yüklenici / Sağlayıcı"
+msgid "Integrator Company"
+msgstr "Entegratör Firma"
 
-#: netbox_support_contracts/services.py:539
+#: netbox_support_contracts/services.py:618
+msgctxt "provider export"
+msgid "Maintenance Company"
+msgstr "Bakım Firması"
+
+#: netbox_support_contracts/services.py:619
 msgctxt "provider export"
 msgid "Current Coverage End Date"
 msgstr "Mevcut Kapsam Bitiş Tarihi"
 
-#: netbox_support_contracts/services.py:540
+#: netbox_support_contracts/services.py:620
 msgctxt "provider export"
 msgid "Days Remaining"
 msgstr "Kalan Gün"
 
-#: netbox_support_contracts/services.py:541
+#: netbox_support_contracts/services.py:621
 msgctxt "provider export"
 msgid "Hardware End of Support (EoS)"
 msgstr "Donanım Destek Sonu (EoS)"
 
-#: netbox_support_contracts/services.py:125
+#: netbox_support_contracts/services.py:129
 #, python-format
 msgid "Expired %(n)d day ago"
 msgid_plural "Expired %(n)d days ago"
 msgstr[0] "Süresi %(n)d gün önce doldu"
 msgstr[1] "Süresi %(n)d gün önce doldu"
 
-#: netbox_support_contracts/services.py:282
+#: netbox_support_contracts/services.py:327
 msgid "End-of-life hardware under active support contract"
 msgstr "Ömrünü tamamlamış (EoL) donanım aktif destek sözleşmesi kapsamında"
 
-#: netbox_support_contracts/services.py:288
+#: netbox_support_contracts/services.py:333
 msgid "Support contract runs past hardware End of Support (EoS)"
 msgstr "Destek sözleşmesi, donanımın Destek Sonu (EoS) tarihinden sonra da sürüyor"
 
-#: netbox_support_contracts/services.py:463
+#: netbox_support_contracts/services.py:512
 #, python-brace-format
 msgid "At most {max} objects can be covered at once."
 msgstr "Tek seferde en fazla {max} nesne kapsama alınabilir."
 
-#: netbox_support_contracts/tables.py:429 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:15
+#: netbox_support_contracts/tables.py:509 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:15
 msgid "Support Coverage"
 msgstr "Destek Kapsamı"
 
-#: netbox_support_contracts/tables.py:430
+#: netbox_support_contracts/tables.py:510
 msgid "Support End Date"
 msgstr "Destek Bitiş Tarihi"
 
-#: netbox_support_contracts/tables.py:431
+#: netbox_support_contracts/tables.py:511
 msgid "Support Days Remaining"
 msgstr "Destek Kalan Gün"
 
-#: netbox_support_contracts/tables.py:432
-msgid "Support Reseller"
-msgstr "Destek Sağlayıcı"
+#: netbox_support_contracts/tables.py:296 netbox_support_contracts/tables.py:371 netbox_support_contracts/tables.py:467 netbox_support_contracts/tables.py:512 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:48 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:105 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:30
+msgid "Integrator Company"
+msgstr "Entegratör Firma"
 
-#: netbox_support_contracts/tables.py:110 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:30
+#: netbox_support_contracts/tables.py:297 netbox_support_contracts/tables.py:374 netbox_support_contracts/tables.py:468 netbox_support_contracts/tables.py:513 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:49 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:109 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:37
+msgid "Maintenance Company"
+msgstr "Bakım Firması"
+
+#: netbox_support_contracts/tables.py:245
+msgid "Name"
+msgstr "Ad"
+
+#: netbox_support_contracts/tables.py:246 netbox_support_contracts/views.py:284
+msgctxt "support contracts"
+msgid "Contact Email"
+msgstr "İletişim E-postası"
+
+#: netbox_support_contracts/tables.py:274 netbox_support_contracts/views.py:296
+msgid "Support Phone"
+msgstr "Destek Telefonu"
+
+#: netbox_support_contracts/tables.py:275 netbox_support_contracts/views.py:298
+msgid "Support Portal URL"
+msgstr "Destek Portalı URL'si"
+
+#: netbox_support_contracts/tables.py:293 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:34
 msgid "Contract Number"
 msgstr "Sözleşme Numarası"
 
-#: netbox_support_contracts/tables.py:111 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:46
+#: netbox_support_contracts/tables.py:294 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:46
 msgid "Type"
 msgstr "Tür"
 
-#: netbox_support_contracts/tables.py:115 netbox_support_contracts/tables.py:186 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:46 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:78
+#: netbox_support_contracts/tables.py:300 netbox_support_contracts/tables.py:379 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:50 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:85
 msgid "Start Date"
 msgstr "Başlangıç Tarihi"
 
-#: netbox_support_contracts/tables.py:116 netbox_support_contracts/tables.py:188 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:50 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:50 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:82 netbox_support_contracts/templates/netbox_support_contracts/widgets/coverage_summary.html:29
+#: netbox_support_contracts/tables.py:301 netbox_support_contracts/tables.py:382 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:51 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:54 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:92 netbox_support_contracts/templates/netbox_support_contracts/widgets/coverage_summary.html:29
 msgid "End Date"
 msgstr "Bitiş Tarihi"
 
-#: netbox_support_contracts/tables.py:117 netbox_support_contracts/tables.py:192 netbox_support_contracts/tables.py:217 netbox_support_contracts/tables.py:262 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:66 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:51 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:54 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:93 netbox_support_contracts/templates/netbox_support_contracts/widgets/coverage_summary.html:30
+#: netbox_support_contracts/tables.py:302 netbox_support_contracts/tables.py:386 netbox_support_contracts/tables.py:413 netbox_support_contracts/tables.py:458 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:66 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:52 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:58 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:103 netbox_support_contracts/templates/netbox_support_contracts/widgets/coverage_summary.html:30
 msgid "Days Remaining"
 msgstr "Kalan Gün"
 
-#: netbox_support_contracts/tables.py:126
+#: netbox_support_contracts/tables.py:311
 msgid "VMs"
 msgstr "Sanal Makineler"
 
-#: netbox_support_contracts/tables.py:136 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:87
+#: netbox_support_contracts/tables.py:321 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:91
 msgid "Licenses / SKUs"
 msgstr "Lisans / SKU Kalemleri"
 
-#: netbox_support_contracts/tables.py:177 netbox_support_contracts/tables.py:238 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:43
+#: netbox_support_contracts/tables.py:364 netbox_support_contracts/tables.py:434 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:50
 msgid "Serial Number"
 msgstr "Seri Numarası"
 
-#: netbox_support_contracts/tables.py:178 netbox_support_contracts/tables.py:210 netbox_support_contracts/tables.py:242 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:17
+#: netbox_support_contracts/tables.py:365 netbox_support_contracts/tables.py:406 netbox_support_contracts/tables.py:438 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:17
 msgid "Device Type"
 msgstr "Cihaz Tipi"
 
-#: netbox_support_contracts/tables.py:180 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:48
+#: netbox_support_contracts/tables.py:367 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:55
 msgid "Virtual Machine"
 msgstr "Sanal Makine"
 
-#: netbox_support_contracts/tables.py:182 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:34 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:26
+#: netbox_support_contracts/tables.py:369 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:38 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:26
 msgid "Contract Type"
 msgstr "Sözleşme Türü"
 
-#: netbox_support_contracts/tables.py:184
+#: netbox_support_contracts/tables.py:376
 msgid "SKU"
 msgstr "SKU"
 
-#: netbox_support_contracts/tables.py:190
+#: netbox_support_contracts/tables.py:384
 msgid "End Date Override"
 msgstr "Bitiş Tarihi (Özel)"
 
-#: netbox_support_contracts/tables.py:211 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:21
+#: netbox_support_contracts/tables.py:407 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:21
 msgid "Module Type"
 msgstr "Modül Tipi"
 
-#: netbox_support_contracts/tables.py:213 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:50 netbox_support_contracts/templates/netbox_support_contracts/inc/lifecycle_panel.html:23
+#: netbox_support_contracts/tables.py:409 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:50 netbox_support_contracts/templates/netbox_support_contracts/inc/lifecycle_panel.html:23
 msgid "End of Sale"
 msgstr "Satış Sonu"
 
-#: netbox_support_contracts/tables.py:214 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:54 netbox_support_contracts/templates/netbox_support_contracts/inc/lifecycle_panel.html:27
+#: netbox_support_contracts/tables.py:410 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:54 netbox_support_contracts/templates/netbox_support_contracts/inc/lifecycle_panel.html:27
 msgid "End of Maintenance"
 msgstr "Bakım Sonu"
 
-#: netbox_support_contracts/tables.py:215 netbox_support_contracts/tables.py:245 netbox_support_contracts/tables.py:451 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:58 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:18 netbox_support_contracts/templates/netbox_support_contracts/inc/lifecycle_panel.html:31
+#: netbox_support_contracts/tables.py:411 netbox_support_contracts/tables.py:441 netbox_support_contracts/tables.py:532 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:58 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:18 netbox_support_contracts/templates/netbox_support_contracts/inc/lifecycle_panel.html:31
 msgid "End of Support"
 msgstr "Destek Sonu"
 
-#: netbox_support_contracts/tables.py:216 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:62
+#: netbox_support_contracts/tables.py:412 netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:62
 msgid "Support State"
 msgstr "Destek Durumu"
 
-#: netbox_support_contracts/tables.py:239
+#: netbox_support_contracts/tables.py:435
 msgid "Asset Tag"
 msgstr "Demirbaş No"
 
-#: netbox_support_contracts/tables.py:240
+#: netbox_support_contracts/tables.py:436
 msgid "Device Status"
 msgstr "Cihaz Durumu"
 
-#: netbox_support_contracts/tables.py:243
+#: netbox_support_contracts/tables.py:439
 msgid "Part Number"
 msgstr "Parça Numarası"
 
-#: netbox_support_contracts/tables.py:256 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:27
+#: netbox_support_contracts/tables.py:452 netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:27
 msgid "Coverage End"
 msgstr "Kapsam Bitişi"
 
-#: netbox_support_contracts/views.py:110
+#: netbox_support_contracts/views.py:118
 msgid "Covered Devices & Objects"
 msgstr "Kapsanan Cihazlar ve Nesneler"
 
-#: netbox_support_contracts/views.py:245
+#: netbox_support_contracts/views.py:282
+msgctxt "support contracts"
+msgid "Contact Name"
+msgstr "İletişim Kişisi"
+
+#: netbox_support_contracts/views.py:287
+msgctxt "support contracts"
+msgid "Contact Phone"
+msgstr "İletişim Telefonu"
+
+#: netbox_support_contracts/views.py:304
+msgid "Covered devices"
+msgstr "Kapsanan cihazlar"
+
+#: netbox_support_contracts/views.py:255
 #, python-brace-format
 msgid "{created} added, {existing} already covered."
 msgstr "{created} eklendi, {existing} zaten kapsamdaydı."
 
-#: netbox_support_contracts/views.py:239
+#: netbox_support_contracts/views.py:249
 msgid "You do not have permission to cover one or more of the selected objects."
 msgstr "Seçilen nesnelerden bir veya daha fazlasını kapsama alma yetkiniz yok."
 
-#: netbox_support_contracts/views.py:253
+#: netbox_support_contracts/views.py:263
 #, python-brace-format
 msgid "{summary} Some serial numbers need review."
 msgstr "{summary} Bazı seri numaralarının gözden geçirilmesi gerekiyor."
 
-#: netbox_support_contracts/views.py:219
+#: netbox_support_contracts/views.py:310
+msgid "Usage"
+msgstr "Kullanım"
+
+#: netbox_support_contracts/views.py:227
 #, python-brace-format
 msgid "The selected filters match more than {max} devices. Narrow them down and try again."
 msgstr "Seçilen filtreler {max} adetten fazla cihazla eşleşiyor. Filtreleri daraltıp tekrar deneyin."
@@ -1020,7 +1219,7 @@ msgid_plural "%(counter)s ambiguous"
 msgstr[0] "%(counter)s belirsiz"
 msgstr[1] "%(counter)s belirsiz"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:25 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:65
+#: netbox_support_contracts/templates/netbox_support_contracts/hardwarelifecycleeol.html:25 netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:69
 msgid "Description"
 msgstr "Açıklama"
 
@@ -1057,15 +1256,11 @@ msgstr "Sözleşmeye Ata"
 msgid "Contract #"
 msgstr "Sözleşme No"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:48
-msgid "Reseller / Provider"
-msgstr "Bayi / Destek Sağlayıcı"
-
-#: netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:49
+#: netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:50
 msgid "SLA"
 msgstr "SLA"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:74
+#: netbox_support_contracts/templates/netbox_support_contracts/inc/device_coverage_panel.html:76
 msgid "No support contract covers this object."
 msgstr "Bu nesneyi kapsayan herhangi bir destek sözleşmesi bulunmuyor."
 
@@ -1097,31 +1292,35 @@ msgstr "Listelenen cihazların seri numaraları, modelleri, parça numaraları, 
 msgid "Export for Support Provider (CSV)"
 msgstr "Yüklenici Teklif Listesi İndir (CSV)"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:14 netbox_support_contracts/templates/netbox_support_contracts/supportcontract_coverage.html:8
+#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:18 netbox_support_contracts/templates/netbox_support_contracts/supportcontract_coverage.html:8
 msgid "Add Devices / Serials"
 msgstr "Cihaz / Seri No Ekle"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:23
+#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:27
 msgid "Contract Overview"
 msgstr "Sözleşme Özeti"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:38 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:34
+#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:42 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:41
 msgid "Service Level"
 msgstr "Hizmet Seviyesi (SLA)"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:79
+#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:83
 msgid "Virtual Machines"
 msgstr "Sanal Makineler"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:122
+#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:130
 msgid "Renewal Notes"
 msgstr "Yenileme Notları"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:126
+#: netbox_support_contracts/templates/netbox_support_contracts/supportcontract.html:134
 msgid "None"
 msgstr "Yok"
 
-#: netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:85
+#: netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:33
+msgid "inherited"
+msgstr "sözleşmeden miras"
+
+#: netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:88 netbox_support_contracts/templates/netbox_support_contracts/supportcoverage.html:95
 msgid "Override"
 msgstr "Özel"
 

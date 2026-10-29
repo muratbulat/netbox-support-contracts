@@ -34,8 +34,8 @@ class LazyStringTests(TestCase):
         item = items[f"plugins:{PLUGIN}:supportcontract_list"]
         self.check(item.link_text, "Support Contracts", "Destek Sözleşmeleri")
         self.check(navigation.menu.label, "Support Contracts", "Destek Sözleşmeleri")
-        self.check(navigation.menu.groups[1].label, "Lifecycle", "Yaşam Döngüsü")
-        self.check(items[f"plugins:{PLUGIN}:device_coverage"].link_text, "Device Coverage", "Cihaz Kapsam Raporu")
+        self.check(navigation.menu.groups[2].label, "Lifecycle", "Yaşam Döngüsü")
+        self.check(items[f"plugins:{PLUGIN}:device_coverage"].link_text, "Device Coverage", "Cihaz Kapsamı")
 
     def test_view_tab_label(self):
         label = SupportContractCoveredObjectsView.tab.label
@@ -121,7 +121,7 @@ class TemplateTranslationTests(TestCase):
         ),
         "device_coverage": (
             lambda self: url("device_coverage"),
-            ["Cihaz Kapsam Raporu", "Kapsam Dahilinde"],
+            ["Cihaz Kapsamı", "Kapsam Dahilinde"],
             ["Device Coverage", "Covered"],
         ),
         "bulk_add": (
