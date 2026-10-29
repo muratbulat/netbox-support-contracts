@@ -1,0 +1,7 @@
+{% load i18n %}
+{% if perms.dcim.view_device %}
+  <a href="{{ provider_export_url }}" class="btn btn-outline-primary"
+     title="{% trans "Serial numbers, models, part numbers, per-model counts, and current coverage end dates of the listed devices" %}">
+    <i class="mdi mdi-file-delimited-outline" aria-hidden="true"></i> {% trans "Export for Support Provider (CSV)" %}
+  </a>
+{% endif %}

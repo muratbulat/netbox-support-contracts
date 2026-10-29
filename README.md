@@ -47,6 +47,13 @@ or role, or by pasting thousands of serial numbers straight from a spreadsheet, 
   - *Support contract runs past hardware End of Support (EoS)*
 - **Device Coverage report** (*Support Contracts → Device Coverage*): every device with its coverage status,
   filterable by status (including *Not covered*), site, role, manufacturer, and device type.
+- **Support provider / RFQ export**: on the Device Coverage report, narrow the list down, for example to active
+  devices whose OEM warranty ends within 90 days, or devices whose coverage ends between two dates. Then choose
+  **Export for Support Provider (CSV)**. You get one row per device with manufacturer, model, part number, units per
+  model, serial number, asset tag, site, rack, role, device status, the coverage currently in force (contract, type,
+  reseller, end date, days remaining), and the hardware End of Support date. A contract's *Covered Devices &
+  Objects* tab has the same button. Headers follow the user's language, and the CSV delimiter follows the user's
+  NetBox CSV preference.
 - **Dashboard widget**: *Support Coverage Summary* shows Covered, Expiring, Expired, and Not Covered device counts,
   each linking to the report, plus the soonest-ending contracts.
 - **Expiry notifications**: a daily system job raises the events *Support contract expiring* and *Support contract

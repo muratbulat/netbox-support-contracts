@@ -1,4 +1,5 @@
 import django_filters
+from dcim.choices import DeviceStatusChoices
 from dcim.models import Device, DeviceRole, DeviceType, Manufacturer, Module, ModuleType, Site
 from django.db.models import Q
 from django.utils import timezone
@@ -11,7 +12,14 @@ from virtualization.models import VirtualMachine
 
 from .choices import ContractStateChoices, ContractTypeChoices, CoverageStatusChoices
 from .models import HardwareLifecycleEoL, SupportContract, SupportCoverage
-from .services import annotate_coverage, annotate_devices, contract_state_q, coverage_status_q, expiry_horizon
+from .services import (
+    OPEN_ENDED,
+    annotate_coverage,
+    annotate_devices,
+    contract_state_q,
+    coverage_status_q,
+    expiry_horizon,
+)
 
 __all__ = (
     "DeviceCoverageFilterSet",
@@ -228,6 +236,17 @@ class DeviceCoverageFilterSet(django_filters.FilterSet):
         choices=ContractTypeChoices, method="filter_contract", label=_("Contract type")
     )
     reseller = django_filters.CharFilter(method="filter_contract", label=_("Reseller"))
+    contract_id = django_filters.ModelMultipleChoiceFilter(
+        queryset=SupportContract.objects.all(), method="filter_contract", label=_("Contract")
+    )
+    status = django_filters.MultipleChoiceFilter(choices=DeviceStatusChoices, label=_("Device status"))
+    expiring_within_days = django_filters.NumberFilter(
+        method="filter_expiring_within_days", label=_("Coverage ends within (days)")
+    )
+    coverage_end_before = django_filters.DateFilter(
+        method="filter_coverage_end", label=_("Coverage ends on or before")
+    )
+    coverage_end_after = django_filters.DateFilter(method="filter_coverage_end", label=_("Coverage ends on or after"))
 
     class Meta:
         model = Device
@@ -244,9 +263,35 @@ class DeviceCoverageFilterSet(django_filters.FilterSet):
         """Devices covered by at least one contract of the given type(s) / whose reseller contains the value."""
         if not value:
             return queryset
-        lookup = {"contract_type": "contract__contract_type__in", "reseller": "contract__reseller__icontains"}[name]
+        lookup = {
+            "contract_type": "contract__contract_type__in",
+            "reseller": "contract__reseller__icontains",
+            "contract_id": "contract__in",
+        }[name]
         covered = SupportCoverage.objects.filter(device__isnull=False, **{lookup: value}).values("device_id")
         return queryset.filter(pk__in=covered)
+
+    @staticmethod
+    def _with_coverage_end(queryset):
+        if "coverage_end_annotated" not in queryset.query.annotations:
+            queryset = annotate_devices(queryset)
+        return queryset.exclude(coverage_end_annotated=OPEN_ENDED).filter(coverage_end_annotated__isnull=False)
+
+    def filter_expiring_within_days(self, queryset, name, value):
+        """Devices whose coverage ends between today and today + N days (inclusive); open-ended excluded."""
+        if value is None or value < 0:
+            return queryset
+        today = timezone.localdate()
+        return self._with_coverage_end(queryset).filter(
+            coverage_end_annotated__gte=today, coverage_end_annotated__lte=expiry_horizon(today, int(value))
+        )
+
+    def filter_coverage_end(self, queryset, name, value):
+        """Coverage end on/before or on/after a date (open-ended coverage never matches)."""
+        if value is None:
+            return queryset
+        lookup = "lte" if name == "coverage_end_before" else "gte"
+        return self._with_coverage_end(queryset).filter(**{f"coverage_end_annotated__{lookup}": value})
 
     def filter_coverage(self, queryset, name, value):
         if not value:

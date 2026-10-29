@@ -1,3 +1,4 @@
+from dcim.choices import DeviceStatusChoices
 from dcim.models import Device, DeviceRole, DeviceType, Manufacturer, Module, ModuleType, Site
 from django import forms
 from django.utils.text import format_lazy
@@ -435,10 +436,22 @@ class HardwareLifecycleEoLFilterForm(PrimaryModelFilterSetForm):
 class DeviceCoverageFilterForm(forms.Form):
     fieldsets = (
         FieldSet("q", "coverage"),
-        FieldSet("contract_type", "reseller", name=_("Contract")),
-        FieldSet("manufacturer_id", "device_type_id", "site_id", "role_id", name=_("Device")),
+        FieldSet(
+            "expiring_within_days", "coverage_end_after", "coverage_end_before", name=_("Coverage end window")
+        ),
+        FieldSet("contract_id", "contract_type", "reseller", name=_("Contract")),
+        FieldSet("status", "manufacturer_id", "device_type_id", "site_id", "role_id", name=_("Device")),
     )
     q = forms.CharField(required=False, label=_("Search"))
+    expiring_within_days = forms.IntegerField(min_value=0, required=False, label=_("Coverage ends within (days)"))
+    coverage_end_after = forms.DateField(required=False, widget=DatePicker(), label=_("Coverage ends on or after"))
+    coverage_end_before = forms.DateField(
+        required=False, widget=DatePicker(), label=_("Coverage ends on or before")
+    )
+    contract_id = DynamicModelMultipleChoiceField(
+        queryset=SupportContract.objects.all(), required=False, label=_("Contract")
+    )
+    status = forms.MultipleChoiceField(choices=DeviceStatusChoices, required=False, label=_("Device status"))
     contract_type = forms.MultipleChoiceField(
         choices=ContractTypeChoices, required=False, label=_("Contract type")
     )

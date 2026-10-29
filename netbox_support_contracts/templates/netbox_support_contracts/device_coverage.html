@@ -2,3 +2,7 @@
 {% load i18n %}
 
 {% block title %}{% trans "Device Coverage" %}{% endblock %}
+
+{% block extra_controls %}
+  {% include 'netbox_support_contracts/inc/provider_export_button.html' %}
+{% endblock extra_controls %}

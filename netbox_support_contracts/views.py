@@ -2,13 +2,16 @@ from dcim.models import Device, DeviceRole, DeviceType, Module, Site
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from django.views.generic import View
 from netbox.object_actions import AddObject, BulkDelete, BulkEdit, BulkExport, BulkImport
 from netbox.views import generic
+from utilities.constants import CSV_DELIMITERS
 from utilities.exceptions import PermissionsViolation
 from utilities.views import ContentTypePermissionRequiredMixin, ViewTab, register_model_view
 from virtualization.models import VirtualMachine
@@ -23,7 +26,35 @@ from .services import (
     bulk_add_coverage,
     get_warning_days,
     may_view_cost,
+    provider_export_headers,
+    provider_export_rows,
 )
+
+PROVIDER_EXPORT = "provider_csv"
+
+
+def provider_export_url(request):
+    """The current URL (filters kept) with ?export=provider_csv."""
+    params = request.GET.copy()
+    params["export"] = PROVIDER_EXPORT
+    return f"{request.path}?{params.urlencode()}"
+
+
+def provider_csv_response(request, devices):
+    """Provider-ready CSV (headers in the user's language, the user's CSV delimiter preference honoured)."""
+    import csv
+
+    pref = request.user.config.get("csv_delimiter") if getattr(request.user, "is_authenticated", False) else None
+    delimiter = CSV_DELIMITERS.get(pref, pref if isinstance(pref, str) and len(pref) == 1 else ",")
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = (
+        f'attachment; filename="support-provider-devices-{timezone.localdate().isoformat()}.csv"'
+    )
+    response.write("\ufeff")  # BOM so spreadsheet applications detect UTF-8 (e.g. Turkish characters)
+    writer = csv.writer(response, delimiter=delimiter)
+    writer.writerow([str(header) for header in provider_export_headers()])
+    writer.writerows(provider_export_rows(devices, request.user))
+    return response
 
 PLUGIN = "netbox_support_contracts"
 LIST_ACTIONS = (AddObject, BulkImport, BulkExport, BulkEdit, BulkDelete)
@@ -86,6 +117,20 @@ class SupportContractCoveredObjectsView(generic.ObjectChildrenView):
 
     def get_children(self, request, parent):
         return coverage_queryset().restrict(request.user, "view").filter(contract=parent)
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("export") != PROVIDER_EXPORT:
+            return super().get(request, *args, **kwargs)
+        # The contract's covered devices (after the tab's filters), in the provider export format.
+        contract = self.get_object(**kwargs)
+        coverage = self.filterset(request.GET, self.get_children(request, contract), request=request).qs
+        devices = Device.objects.restrict(request.user, "view").filter(
+            pk__in=coverage.filter(device__isnull=False).values("device_id")
+        )
+        return provider_csv_response(request, devices)
+
+    def get_extra_context(self, request, instance):
+        return {"provider_export_url": provider_export_url(request)}
 
 
 @register_model_view(SupportContract, "add", detail=False)
@@ -364,4 +409,14 @@ class DeviceCoverageListView(generic.ObjectListView):
     filterset = filtersets.DeviceCoverageFilterSet
     filterset_form = forms.DeviceCoverageFilterForm
     template_name = f"{PLUGIN}/device_coverage.html"
-    actions = ()
+    additional_permissions = [f"{PLUGIN}.view_supportcoverage"]
+    actions = (BulkExport,)
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("export") == PROVIDER_EXPORT:
+            devices = self.filterset(request.GET, self.queryset, request=request).qs
+            return provider_csv_response(request, devices)
+        return super().get(request, *args, **kwargs)
+
+    def get_extra_context(self, request):
+        return {"provider_export_url": provider_export_url(request)}

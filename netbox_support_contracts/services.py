@@ -16,7 +16,7 @@ from django.db.models import Count, DateField, IntegerField, Max, OuterRef, Q, S
 from django.db.models.functions import Coalesce, Upper
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from django.utils.translation import ngettext
+from django.utils.translation import ngettext, pgettext
 from netbox.plugins import get_plugin_config
 from utilities.exceptions import PermissionsViolation
 
@@ -46,6 +46,8 @@ __all__ = (
     "may_view_cost",
     "object_coverage",
     "parse_serials",
+    "provider_export_headers",
+    "provider_export_rows",
 )
 
 PLUGIN = "netbox_support_contracts"
@@ -510,3 +512,99 @@ def bulk_remove_coverage(contract, *, user, coverage_ids=(), device_ids=(), virt
         for row in rows:
             row.delete()
     return len(rows)
+
+
+#
+# Support provider / RFQ export
+#
+
+def provider_export_headers():
+    """Column headers of the provider-ready device export, in the active language."""
+    return [
+        pgettext("provider export", "Manufacturer"),
+        pgettext("provider export", "Device Type"),
+        pgettext("provider export", "Part Number"),
+        pgettext("provider export", "Model Device Count"),
+        pgettext("provider export", "Device"),
+        pgettext("provider export", "Serial Number"),
+        pgettext("provider export", "Asset Tag"),
+        pgettext("provider export", "Site"),
+        pgettext("provider export", "Rack"),
+        pgettext("provider export", "Role"),
+        pgettext("provider export", "Device Status"),
+        pgettext("provider export", "Coverage Status"),
+        pgettext("provider export", "Current Contract"),
+        pgettext("provider export", "Current Contract Type"),
+        pgettext("provider export", "Current Reseller"),
+        pgettext("provider export", "Current Coverage End Date"),
+        pgettext("provider export", "Days Remaining"),
+        pgettext("provider export", "Hardware End of Support (EoS)"),
+    ]
+
+
+def provider_export_rows(device_qs, user, today=None):
+    """
+    One row per device for support providers quoting a renewal or takeover: hardware identity (model, part number,
+    serial, per-model unit count), location, and the coverage currently in force.
+
+    "Current" coverage is the visible coverage row with the latest effective end date, i.e. the one that determines
+    when the device's support actually ends. Coverage and lifecycle data the user may not view is left blank.
+    """
+    from collections import Counter
+
+    from django.db.models import Prefetch
+
+    from .choices import ContractTypeChoices
+    from .models import SupportCoverage
+
+    today = _today(today)
+    coverage = SupportCoverage.objects.select_related("contract")
+    coverage = coverage.restrict(user, "view") if user.has_perm(f"{PLUGIN}.view_supportcoverage") else coverage.none()
+    show_eol = user.has_perm(f"{PLUGIN}.view_hardwarelifecycleeol")
+    devices = list(
+        device_qs.select_related("device_type__manufacturer", "device_type__support_eol", "site", "rack", "role")
+        .prefetch_related(Prefetch("support_coverage", queryset=coverage))
+        .order_by("device_type__manufacturer__name", "device_type__model", "name", "pk")
+    )
+    per_model = Counter(device.device_type_id for device in devices)
+    coverage_labels = dict(CoverageStatusChoices)
+    type_labels = dict(ContractTypeChoices)
+    rows = []
+    for device in devices:
+        current = max(
+            device.support_coverage.all(), key=lambda row: row.effective_end_date or OPEN_ENDED, default=None
+        )
+        latest = (current.effective_end_date or OPEN_ENDED) if current else None
+        if latest is None:
+            end_date = ""
+        elif latest == OPEN_ENDED:
+            end_date = _("Open-ended")
+        else:
+            end_date = latest.isoformat()
+        eos = None
+        if show_eol:
+            try:
+                eos = device.device_type.support_eol.end_of_support
+            except ObjectDoesNotExist:
+                eos = None
+        rows.append([
+            device.device_type.manufacturer.name,
+            device.device_type.model,
+            device.device_type.part_number,
+            per_model[device.device_type_id],
+            device.name or "",
+            device.serial,
+            device.asset_tag or "",
+            device.site.name,
+            device.rack.name if device.rack else "",
+            device.role.name,
+            device.get_status_display(),
+            coverage_labels[coverage_status(latest, today=today)],
+            current.contract.contract_number if current else "",
+            type_labels[current.contract.contract_type] if current else "",
+            current.contract.reseller if current else "",
+            end_date,
+            days_until(latest, today) if latest not in (None, OPEN_ENDED) else "",
+            eos.isoformat() if eos else "",
+        ])
+    return rows

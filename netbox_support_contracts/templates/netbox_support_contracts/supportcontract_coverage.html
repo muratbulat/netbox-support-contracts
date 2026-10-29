@@ -2,6 +2,7 @@
 {% load i18n %}
 
 {% block extra_controls %}
+  {% include 'netbox_support_contracts/inc/provider_export_button.html' %}
   {% if perms.netbox_support_contracts.add_supportcoverage %}
     <a href="{% url 'plugins:netbox_support_contracts:supportcontract_add_devices' pk=object.pk %}" class="btn btn-primary">
       <i class="mdi mdi-plus-thick" aria-hidden="true"></i> {% trans "Add Devices / Serials" %}

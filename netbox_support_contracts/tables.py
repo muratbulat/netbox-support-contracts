@@ -236,7 +236,14 @@ class DeviceCoverageTable(NetBoxTable):
 
     name = tables.Column(verbose_name=_("Device"), linkify=True, order_by=("name", "pk"))
     serial = tables.Column(verbose_name=_("Serial Number"))
+    asset_tag = tables.Column(verbose_name=_("Asset Tag"))
+    status = columns.ChoiceFieldColumn(verbose_name=_("Device Status"))
+    manufacturer = tables.Column(verbose_name=_("Manufacturer"), accessor="device_type__manufacturer", linkify=True)
     device_type = tables.Column(verbose_name=_("Device Type"), linkify=True)
+    part_number = tables.Column(verbose_name=_("Part Number"), accessor="device_type__part_number")
+    end_of_support = columns.DateColumn(
+        verbose_name=_("End of Support"), accessor="device_type__support_eol__end_of_support", orderable=False
+    )
     site = tables.Column(verbose_name=_("Site"), linkify=True)
     role = tables.Column(verbose_name=_("Role"), linkify=True)
     coverage = tables.Column(
@@ -266,11 +273,13 @@ class DeviceCoverageTable(NetBoxTable):
     class Meta(NetBoxTable.Meta):
         model = Device
         fields = (
-            "pk", "id", "name", "serial", "device_type", "site", "role", "coverage", "coverage_end",
+            "pk", "id", "name", "serial", "asset_tag", "status", "manufacturer", "device_type", "part_number", "site",
+            "role", "end_of_support", "coverage", "coverage_end",
             "days_remaining", "contracts",
         )
         default_columns = (
-            "name", "serial", "device_type", "site", "coverage", "coverage_end", "days_remaining", "contracts",
+            "name", "serial", "manufacturer", "device_type", "site", "coverage", "coverage_end", "days_remaining",
+            "contracts",
         )
 
     def render_coverage(self, value):
