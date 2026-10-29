@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from netbox.models import NetBoxModel, PrimaryModel
 
 from .choices import ContractStateChoices
-from .services import contract_state, days_until
+from .services import contract_state, days_label, days_until
 
 __all__ = ("HardwareLifecycleEoL", "SupportContract", "SupportCoverage")
 
@@ -35,6 +35,11 @@ class StateMixin:
     @property
     def days_remaining(self):
         return days_until(self._state_end_date())
+
+    @property
+    def remaining_days_display(self):
+        """Translated days remaining, e.g. "45 days left", "Ends today", "Expired 3 days ago", "Open-ended"."""
+        return days_label(self.days_remaining)
 
 
 class SupportContract(StateMixin, PrimaryModel):
@@ -104,7 +109,7 @@ class SupportContract(StateMixin, PrimaryModel):
             ),
         )
         indexes = (models.Index(fields=["end_date"]),)
-        permissions = (("view_cost", "Can view and edit contract commercial cost"),)
+        permissions = (("view_cost", _("Can view and edit contract commercial cost")),)
 
     def __str__(self):
         return self.contract_number

@@ -1,4 +1,5 @@
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from netbox.plugins import PluginMenu, PluginMenuButton, PluginMenuItem, get_plugin_config
 
 PLUGIN = "netbox_support_contracts"
@@ -45,7 +46,7 @@ if get_plugin_config(PLUGIN, "top_level_menu"):
         icon_class="mdi mdi-file-certificate-outline",
         groups=(
             (_("Contracts"), contract_items),
-            (_("Lifecycle"), lifecycle_items),
+            (pgettext_lazy("support contracts", "Lifecycle"), lifecycle_items),
         ),
     )
 else:

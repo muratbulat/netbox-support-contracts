@@ -1,6 +1,6 @@
 from dcim.models import Device
 from django.test import RequestFactory, override_settings
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 from netbox.context_managers import event_tracking
 from utilities.testing import TestCase
 
@@ -194,11 +194,15 @@ class CoverageWorkflowTests(ViewTestBase):
         response = self.client.get(url("supportcontract_coverage", self.contract.pk))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "SN-10001")
-        self.assertNotContains(response, "Remove Selected")
-        self.add_permissions(f"{PLUGIN}.delete_supportcoverage", f"{PLUGIN}.add_supportcoverage")
+        self.add_permissions(
+            f"{PLUGIN}.delete_supportcoverage", f"{PLUGIN}.change_supportcoverage", f"{PLUGIN}.add_supportcoverage"
+        )
         response = self.client.get(url("supportcontract_coverage", self.contract.pk))
-        self.assertContains(response, "Remove Selected")
-        self.assertContains(response, "Add Devices / Serials")
+        # Only NetBox's native bulk controls remain at the bottom; the top "Add Devices / Serials" button stays.
+        self.assertNotContains(response, "Remove Selected")
+        self.assertContains(response, url("supportcoverage_bulk_edit"))
+        self.assertContains(response, url("supportcoverage_bulk_delete"))
+        self.assertContains(response, url("supportcontract_add_devices", self.contract.pk))
         response = self.client.get(url("supportcontract_coverage", self.contract.pk), {"object_type": "device"})
         self.assertEqual(response.status_code, 200)
 
@@ -239,14 +243,17 @@ class CoverageWorkflowTests(ViewTestBase):
         response = self.client.post(url("supportcontract_add_devices", self.contract.pk), {})
         self.assertContains(response, "Pick at least one object")
 
-    def test_remove_selected(self):
-        remove_url = url("supportcontract_remove_coverage", self.contract.pk)
-        response = self.client.post(remove_url, {"pk": [self.coverage.pk]})
-        self.assertEqual(response.status_code, 403)
+    def test_native_bulk_delete_unlinks_coverage(self):
+        with self.assertRaises(NoReverseMatch):
+            url("supportcontract_remove_coverage", self.contract.pk)
+        coverage_tab = url("supportcontract_coverage", self.contract.pk)
+        data = {"pk": [self.coverage.pk], "_confirm": True, "confirm": True, "return_url": coverage_tab}
+        self.assertEqual(self.client.post(url("supportcoverage_bulk_delete"), data).status_code, 403)
         self.add_permissions(f"{PLUGIN}.delete_supportcoverage")
-        response = self.client.post(remove_url, {"pk": [self.coverage.pk]})
-        self.assertEqual(response.status_code, 302)
+        response = self.client.post(url("supportcoverage_bulk_delete"), data)
+        self.assertRedirects(response, coverage_tab, fetch_redirect_response=False)
         self.assertFalse(SupportCoverage.objects.filter(pk=self.coverage.pk).exists())
+        self.assertTrue(Device.objects.filter(pk=self.device.pk).exists())
 
     def test_device_panel(self):
         response = self.client.get(self.device.get_absolute_url())

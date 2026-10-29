@@ -6,7 +6,7 @@ from . import views  # noqa: F401 -- registers the model views consumed by get_m
 app_name = "netbox_support_contracts"
 
 urlpatterns = [
-    # Support contracts (detail routes include coverage/, add-devices/ and remove-coverage/)
+    # Support contracts (detail routes include coverage/ and add-devices/)
     path("contracts/", include(get_model_urls(app_name, "supportcontract", detail=False))),
     path("contracts/<int:pk>/", include(get_model_urls(app_name, "supportcontract"))),
     # Support coverage

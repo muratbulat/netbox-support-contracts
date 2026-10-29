@@ -16,6 +16,7 @@ from django.db.models import Count, DateField, IntegerField, Max, OuterRef, Q, S
 from django.db.models.functions import Coalesce, Upper
 from django.utils import timezone
 from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
 from netbox.plugins import get_plugin_config
 from utilities.exceptions import PermissionsViolation
 
@@ -37,6 +38,7 @@ __all__ = (
     "coverage_status_q",
     "coverage_summary",
     "days_until",
+    "days_label",
     "expiry_horizon",
     "get_warning_days",
     "lifecycle_flags",
@@ -111,6 +113,17 @@ def days_until(end_date, today=None):
     if end_date is None:
         return None
     return (end_date - _today(today)).days
+
+
+def days_label(days):
+    """Human-readable days remaining in the active language (None = open-ended)."""
+    if days is None:
+        return _("Open-ended")
+    if days < 0:
+        return ngettext("Expired %(n)d day ago", "Expired %(n)d days ago", -days) % {"n": -days}
+    if days == 0:
+        return _("Ends today")
+    return ngettext("%(n)d day left", "%(n)d days left", days) % {"n": days}
 
 
 def contract_state(end_date, warning_days=None, today=None):

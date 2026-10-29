@@ -1,6 +1,8 @@
 from dcim.models import Device, DeviceRole, DeviceType, Manufacturer, Module, ModuleType, Site
 from django import forms
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from netbox.context import current_request
 from netbox.forms import (
     NetBoxModelBulkEditForm,
@@ -46,8 +48,12 @@ __all__ = (
 )
 
 COST_FIELDS = ("cost", "currency")
-CURRENCY_HELP = _("3-letter ISO 4217 code, e.g. {examples}").format(
-    examples=", ".join(value for value, _label in CurrencyChoices)
+# Contextual: NetBox's own catalog translates the bare words differently (e.g. "State" as a province).
+STATE = pgettext_lazy("support contracts", "State")
+DEVICES = pgettext_lazy("support contracts", "Devices")
+LIFECYCLE = pgettext_lazy("support contracts", "Lifecycle")
+CURRENCY_HELP = format_lazy(
+    _("3-letter ISO 4217 code, e.g. {examples}"), examples=", ".join(value for value, _label in CurrencyChoices)
 )
 
 
@@ -173,7 +179,7 @@ class SupportContractFilterForm(PrimaryModelFilterSetForm):
     manufacturer_id = DynamicModelMultipleChoiceField(
         queryset=Manufacturer.objects.all(), required=False, label=_("Manufacturer")
     )
-    state = forms.MultipleChoiceField(choices=ContractStateChoices, required=False, label=_("State"))
+    state = forms.MultipleChoiceField(choices=ContractStateChoices, required=False, label=STATE)
     expiring_within_days = forms.IntegerField(min_value=0, required=False, label=_("Ends within (days)"))
     service_level = forms.CharField(required=False, label=_("Service level"))
     reseller = forms.CharField(required=False, label=_("Reseller"))
@@ -271,7 +277,7 @@ class SupportCoverageFilterForm(NetBoxModelFilterSetForm):
     manufacturer_id = DynamicModelMultipleChoiceField(
         queryset=Manufacturer.objects.all(), required=False, label=_("Manufacturer")
     )
-    state = forms.MultipleChoiceField(choices=ContractStateChoices, required=False, label=_("State"))
+    state = forms.MultipleChoiceField(choices=ContractStateChoices, required=False, label=STATE)
     object_type = forms.ChoiceField(
         choices=(
             ("", "---------"),
@@ -306,7 +312,7 @@ class HardwareLifecycleEoLForm(PrimaryModelForm):
 
     fieldsets = (
         FieldSet("device_type", "module_type", "description", "tags", name=_("Hardware")),
-        FieldSet("end_of_sale", "end_of_maintenance", "end_of_support", "notice_url", name=_("Lifecycle")),
+        FieldSet("end_of_sale", "end_of_maintenance", "end_of_support", "notice_url", name=LIFECYCLE),
     )
 
     class Meta:
@@ -417,7 +423,7 @@ class DeviceCoverageFilterForm(forms.Form):
 
 class BulkCoverageAddForm(forms.Form):
     devices = DynamicModelMultipleChoiceField(
-        label=_("Devices"), queryset=Device.objects.all(), required=False, selector=True
+        label=DEVICES, queryset=Device.objects.all(), required=False, selector=True
     )
     virtual_machines = DynamicModelMultipleChoiceField(
         label=_("Virtual machines"), queryset=VirtualMachine.objects.all(), required=False, selector=True
@@ -435,10 +441,13 @@ class BulkCoverageAddForm(forms.Form):
         label=_("Serial numbers"),
         required=False,
         widget=forms.Textarea(attrs={"rows": 10, "class": "font-monospace", "placeholder": "SN-10001\nSN-10002"}),
-        help_text=_(
-            "Paste up to {max} serial numbers separated by newlines, commas, semicolons, or spaces "
-            "(e.g. straight from a spreadsheet column, invoice, or vendor quote). Matching is case-insensitive."
-        ).format(max=MAX_BULK_ITEMS),
+        help_text=format_lazy(
+            _(
+                "Paste up to {max} serial numbers separated by newlines, commas, semicolons, or spaces "
+                "(e.g. straight from a spreadsheet column, invoice, or vendor quote). Matching is case-insensitive."
+            ),
+            max=MAX_BULK_ITEMS,
+        ),
     )
     sku = forms.CharField(label=_("SKU / License Part Number"), max_length=100, required=False)
     end_date = forms.DateField(

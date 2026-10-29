@@ -8,16 +8,3 @@
     </a>
   {% endif %}
 {% endblock extra_controls %}
-
-{% block bulk_extra_controls %}
-  {{ block.super }}
-  {% if perms.netbox_support_contracts.delete_supportcoverage %}
-    <div class="btn-list">
-      <button type="submit" class="btn btn-danger"
-              formaction="{% url 'plugins:netbox_support_contracts:supportcontract_remove_coverage' pk=object.pk %}"
-              onclick="return confirm('{% trans "Remove the selected objects from this contract?" %}');">
-        <i class="mdi mdi-link-variant-off" aria-hidden="true"></i> {% trans "Remove Selected" %}
-      </button>
-    </div>
-  {% endif %}
-{% endblock bulk_extra_controls %}

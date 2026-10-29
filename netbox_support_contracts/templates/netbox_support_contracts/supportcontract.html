@@ -35,7 +35,7 @@
             <td>{{ object.service_level|placeholder }}</td>
           </tr>
           <tr>
-            <th scope="row">{% trans "State" %}</th>
+            <th scope="row">{% trans "State" context "support contracts" %}</th>
             <td>{{ state_badge }}</td>
           </tr>
           <tr>
@@ -68,7 +68,7 @@
         <table class="table table-hover attr-table">
           {% url 'plugins:netbox_support_contracts:supportcontract_coverage' pk=object.pk as coverage_url %}
           <tr>
-            <th scope="row">{% trans "Devices" %}</th>
+            <th scope="row">{% trans "Devices" context "support contracts" %}</th>
             <td><a href="{{ coverage_url }}?object_type=device">{{ object.device_count }}</a></td>
           </tr>
           <tr>

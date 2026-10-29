@@ -35,7 +35,7 @@ Issues = "https://github.com/muratbulat/netbox-support-contracts/issues"
 include = ["netbox_support_contracts*"]
 
 [tool.setuptools.package-data]
-netbox_support_contracts = ["templates/**/*.html"]
+netbox_support_contracts = ["templates/**/*.html", "locale/**/*.po", "locale/**/*.mo"]
 
 [tool.ruff]
 line-length = 120

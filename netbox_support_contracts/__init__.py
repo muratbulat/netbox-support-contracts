@@ -1,5 +1,6 @@
 """NetBox Support Contracts: support contract, warranty coverage, and hardware EoL tracking."""
 
+from django.utils.translation import gettext_lazy as _
 from netbox.plugins import PluginConfig
 
 __version__ = "1.0.0"
@@ -7,8 +8,8 @@ __version__ = "1.0.0"
 
 class NetBoxSupportContractsConfig(PluginConfig):
     name = "netbox_support_contracts"
-    verbose_name = "NetBox Support Contracts"
-    description = "Enterprise support contract, warranty coverage, and hardware EoL tracking for NetBox"
+    verbose_name = _("NetBox Support Contracts")
+    description = _("Enterprise support contract, warranty coverage, and hardware EoL tracking for NetBox")
     version = __version__
     author = "muratbulat"
     base_url = "support-contracts"

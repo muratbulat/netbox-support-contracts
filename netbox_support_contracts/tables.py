@@ -2,13 +2,13 @@ import django_tables2 as tables
 from dcim.models import Device
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext
+from django.utils.translation import pgettext_lazy
 from netbox.context import current_request
 from netbox.tables import NetBoxTable, PrimaryModelTable, columns
 
 from .choices import ContractStateChoices, CoverageStatusChoices
 from .models import HardwareLifecycleEoL, SupportContract, SupportCoverage
-from .services import OPEN_ENDED, coverage_status, days_until, get_warning_days, may_view_cost
+from .services import OPEN_ENDED, coverage_status, days_label, days_until, get_warning_days, may_view_cost
 
 __all__ = (
     "DeviceCoverageTable",
@@ -37,16 +37,6 @@ def state_badge(state):
 def coverage_badge(status):
     """Green Covered / yellow Expiring / red Expired / grey Not covered."""
     return _badge(dict(CoverageStatusChoices)[status], CoverageStatusChoices.colors[status])
-
-
-def days_label(days):
-    if days is None:
-        return _("Open-ended")
-    if days < 0:
-        return ngettext("Expired %(n)d day ago", "Expired %(n)d days ago", -days) % {"n": -days}
-    if days == 0:
-        return _("Ends today")
-    return ngettext("%(n)d day left", "%(n)d days left", days) % {"n": days}
 
 
 def days_badge(days, warning_days=None):
@@ -110,14 +100,14 @@ class SupportContractTable(PrimaryModelTable):
     contract_number = tables.Column(verbose_name=_("Contract Number"), linkify=True)
     manufacturer = tables.Column(verbose_name=_("Manufacturer"), linkify=True)
     tenant = tables.Column(verbose_name=_("Tenant"), linkify=True)
-    state = StateColumn(verbose_name=_("State"), order_by=("end_date",))
+    state = StateColumn(verbose_name=pgettext_lazy("support contracts", "State"), order_by=("end_date",))
     start_date = columns.DateColumn(verbose_name=_("Start Date"))
     end_date = EndDateColumn(verbose_name=_("End Date"))
     days_remaining = DaysRemainingColumn(verbose_name=_("Days Remaining"), order_by=("end_date",))
     device_count = columns.LinkedCountColumn(
         viewname="plugins:netbox_support_contracts:supportcoverage_list",
         url_params={"contract_id": "pk"},
-        verbose_name=_("Devices"),
+        verbose_name=pgettext_lazy("support contracts", "Devices"),
     )
     vm_count = columns.LinkedCountColumn(
         viewname="plugins:netbox_support_contracts:supportcoverage_list",
@@ -178,7 +168,7 @@ class SupportCoverageTable(NetBoxTable):
         verbose_name=_("End Date"), accessor="effective_end_date", order_by=("effective_end",)
     )
     end_date = columns.DateColumn(verbose_name=_("End Date Override"))
-    state = StateColumn(verbose_name=_("State"), order_by=("effective_end",))
+    state = StateColumn(verbose_name=pgettext_lazy("support contracts", "State"), order_by=("effective_end",))
     days_remaining = DaysRemainingColumn(verbose_name=_("Days Remaining"), order_by=("effective_end",))
     notes = tables.Column(verbose_name=_("Notes"))
     tags = columns.TagColumn(url_name="plugins:netbox_support_contracts:supportcoverage_list")

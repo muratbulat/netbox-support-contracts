@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from django.views.generic import View
 from netbox.object_actions import AddObject, BulkDelete, BulkEdit, BulkExport, BulkImport
 from netbox.views import generic
@@ -20,7 +21,6 @@ from .services import (
     annotate_coverage,
     annotate_devices,
     bulk_add_coverage,
-    bulk_remove_coverage,
     get_warning_days,
     may_view_cost,
 )
@@ -78,7 +78,7 @@ class SupportContractCoveredObjectsView(generic.ObjectChildrenView):
     template_name = f"{PLUGIN}/supportcontract_coverage.html"
     actions = (BulkEdit, BulkDelete)
     tab = ViewTab(
-        label=_("Covered Devices & Objects"),
+        label=gettext_lazy("Covered Devices & Objects"),
         badge=lambda obj: obj.coverage.count(),
         permission=f"{PLUGIN}.view_supportcoverage",
         weight=500,
@@ -214,30 +214,6 @@ class BulkAddCoverageView(CoveragePermissionView):
             "notes": form.cleaned_data["notes"],
         })
         return self.render_page(request, contract, retry, result)
-
-
-@register_model_view(SupportContract, "remove_coverage", path="remove-coverage")
-class BulkRemoveCoverageView(CoveragePermissionView):
-    """Remove the selected coverage rows (POST "pk" list) from a contract."""
-
-    permission_required = f"{PLUGIN}.delete_supportcoverage"
-
-    def post(self, request, pk):
-        contract = get_object_or_404(SupportContract.objects.restrict(request.user, "view"), pk=pk)
-        return_url = reverse(f"plugins:{PLUGIN}:supportcontract_coverage", args=[contract.pk])
-        selected = [value for value in request.POST.getlist("pk") if str(value).isdigit()]
-        if not selected:
-            messages.warning(request, _("No coverage rows were selected."))
-            return redirect(return_url)
-        try:
-            removed = bulk_remove_coverage(contract, user=request.user, coverage_ids=selected)
-        except PermissionsViolation:
-            messages.error(request, _("You do not have permission to remove one or more of the selected rows."))
-            return redirect(return_url)
-        messages.success(request, _("Removed {count} covered objects from {contract}.").format(
-            count=removed, contract=contract
-        ))
-        return redirect(return_url)
 
 
 #

@@ -6,6 +6,7 @@ from dcim.api.serializers import (
     ModuleTypeSerializer,
 )
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from netbox.api.serializers import NetBoxModelSerializer, PrimaryModelSerializer
 from rest_framework import serializers
 from tenancy.api.serializers import TenantSerializer
@@ -124,7 +125,7 @@ class HardwareLifecycleEoLSerializer(PrimaryModelSerializer):
 class SerialsField(serializers.Field):
     """Accepts pasted text (newline/comma/semicolon/space separated) or a list of serial strings."""
 
-    default_error_messages = {"invalid": _("Provide a string or a list of strings.")}
+    default_error_messages = {"invalid": gettext_lazy("Provide a string or a list of strings.")}
 
     def to_internal_value(self, data):
         if isinstance(data, str):

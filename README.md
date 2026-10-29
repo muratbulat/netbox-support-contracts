@@ -147,6 +147,13 @@ The queries are `support_contract` / `support_contract_list`, `support_coverage`
 `hardware_lifecycle_eol` / `hardware_lifecycle_eol_list`. The computed `state`, `days_remaining`, and
 `effective_end_date` fields are included.
 
+## Translations
+
+The interface is available in English and Turkish (`tr`). It follows the language chosen in the NetBox user
+preferences. The catalog is at `netbox_support_contracts/locale/tr/LC_MESSAGES/django.po`, and the compiled
+`django.mo` ships with the package. After editing the `.po` file, recompile it with
+`django-admin compilemessages` from the `netbox_support_contracts/` directory.
+
 ## Development
 
 Run the test suite inside a NetBox checkout with the plugin installed and enabled. Django creates and destroys a

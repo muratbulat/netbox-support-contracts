@@ -3,6 +3,7 @@ from dcim.models import Device, DeviceRole, DeviceType, Manufacturer, Module, Mo
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from netbox.filtersets import NetBoxModelFilterSet, PrimaryModelFilterSet
 from tenancy.models import Tenant
 from utilities.filtersets import register_filterset
@@ -46,7 +47,7 @@ class SupportContractFilterSet(PrimaryModelFilterSet):
         field_name="tenant__slug", queryset=Tenant.objects.all(), to_field_name="slug", label=_("Tenant (slug)")
     )
     state = django_filters.MultipleChoiceFilter(
-        choices=ContractStateChoices, method="filter_state", label=_("State")
+        choices=ContractStateChoices, method="filter_state", label=pgettext_lazy("support contracts", "State")
     )
     device_id = django_filters.ModelMultipleChoiceFilter(
         field_name="coverage__device",
@@ -119,7 +120,7 @@ class SupportCoverageFilterSet(NetBoxModelFilterSet):
         field_name="device__site", queryset=Site.objects.all(), label=_("Site (ID)")
     )
     state = django_filters.MultipleChoiceFilter(
-        choices=ContractStateChoices, method="filter_state", label=_("State")
+        choices=ContractStateChoices, method="filter_state", label=pgettext_lazy("support contracts", "State")
     )
     object_type = django_filters.ChoiceFilter(
         choices=(
